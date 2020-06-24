@@ -1,0 +1,3 @@
+LIBRARY   crypto
+EXPORTS
+  encode @1
