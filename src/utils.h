@@ -1,5 +1,5 @@
 #pragma once
 
-#include <iostream>
+#include <string>
 
-int add(int a, int b);
+std::string HexEncode(const void* bytes, size_t size);

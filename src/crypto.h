@@ -1,11 +1,8 @@
 #pragma once
 
 #include <string>
-
-int encode(const std::string& s);
+#include <vector>
 
 void InitOpenssl();
 
-int GenKeyPair();
-
-bool create_ec_private_key();
+int GenSM2KeyPair(std::vector<unsigned char> pub_key, std::vector<unsigned char> priv_key);
