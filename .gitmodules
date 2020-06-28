@@ -1,0 +1,4 @@
+[submodule "3rdparty/u03-ukey"]
+	path = 3rdparty/u03-ukey
+	url = git@git.lssec.com:luguoqiang/u03-ukey.git
+	branch = master

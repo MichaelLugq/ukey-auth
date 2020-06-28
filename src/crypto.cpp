@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "crypto.h"
+#include "u03-ukey/u03ukey/u03ukey.h"
 
 #include <windows.h>
 
@@ -10,6 +11,8 @@
 #include <openssl/ssl.h>
 
 #include <vector>
+
+#pragma region InitOpenssl
 
 static CRITICAL_SECTION *lock_cs;
 
@@ -43,12 +46,14 @@ void InitOpenssl() {
   CRYPTO_set_id_callback(win32_openssl_thread_id_cb);
 }
 
+#pragma endregion InitOpenssl
+
 template<typename T, typename D>
 std::unique_ptr<T, D> make_handle(T* handle, D deleter) {
   return std::unique_ptr<T, D> {handle, deleter};
 }
 
-int GenSM2KeyPair(std::vector<unsigned char> pub_key, std::vector<unsigned char> priv_key) {
+int GenSM2KeyPair(std::vector<BYTE>& pub_key, std::vector<BYTE>& priv_key) {
   auto ec_key = make_handle(EC_KEY_new_by_curve_name(NID_sm2), EC_KEY_free);
 
   EC_KEY* x = ec_key.get();
@@ -71,6 +76,94 @@ int GenSM2KeyPair(std::vector<unsigned char> pub_key, std::vector<unsigned char>
   pub_key.assign(pub + 1, pub + 1 + publen - 1);
   priv_key.assign(priv, priv + prilen);
 
+  return 0;
+}
+
+int ConnectUSBKey(HANDLE& handle) {
+  ULONG name_list_size = 0;
+  if (LS_EnumDev(nullptr, &name_list_size) != LS_SUCCESS) {
+    return -1;
+  }
+
+  auto name_list = std::shared_ptr<char>(new char[name_list_size], [](char* p) {delete[] p; });
+  if (LS_EnumDev(name_list.get(), &name_list_size) != LS_SUCCESS) {
+    return -2;
+  }
+
+  std::vector<std::string> name_vector;
+  std::vector<std::string> u03_devices;
+  if (StrToVector(name_list.get(), name_list_size, name_vector) != 0) {
+    return -3;
+  }
+
+  if (GetLSSDDevice(name_vector, u03_devices) != 1) {
+    return -4;
+  }
+
+  ULONG ec;
+  ec = LS_ConnectDev((LPSTR)u03_devices[0].c_str(), &handle);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return LS_SUCCESS;
+}
+
+int SetPIN(const std::vector<BYTE>& pin) {
+  HANDLE handle;
+  ULONG ec = ConnectUSBKey(handle);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
+
+  ULONG max_retry_count = 10;
+  ec = LS_SetPin(handle, (BYTE*)&pin[0], pin.size(), max_retry_count);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return 0;
+}
+
+int VerifyPIN(const std::vector<BYTE>& pin) {
+  HANDLE handle;
+  ULONG ec = ConnectUSBKey(handle);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
+
+  ULONG retry_count = 0;
+  ec = LS_VerifyPIN(handle, (BYTE*)&pin[0], pin.size(), &retry_count);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return 0;
+}
+
+int ImportKeyPairToU03Key(const std::vector<BYTE>& pub_key, const std::vector<BYTE>& priv_key) {
+  HANDLE handle;
+  ULONG ec = ConnectUSBKey(handle);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
+
+  ec = LS_ImportKeyPair(handle, (BYTE*)pub_key.data(), pub_key.size(),
+                        (BYTE*)priv_key.data(), priv_key.size());
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return 0;
+}
+
+int ImportAllPubKey(const std::vector<PubkeyInfo>& pubkey_info) {
   return 0;
 }
 
