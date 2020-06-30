@@ -14,14 +14,22 @@ target_link_libraries(crypto_test
   u03ukey
 )
 
+protobuf_generate_cpp(secret_PROTO_SRCS secret_PROTO_HDR protos/secret.proto)
+
 add_executable(publisher
   utils.cpp
   crypto.cpp
   publisher.cpp
+  ${secret_PROTO_SRCS}
+  ${secret_PROTO_HDR}
+)
+target_include_directories(publisher PUBLIC 
+  ${PROTOBUF_INCLUDE_DIRS}
 )
 target_link_libraries(publisher
   OpenSSL::Crypto
   OpenSSL::SSL
+  protobuf::libprotobuf
   u03ukey
 )
 

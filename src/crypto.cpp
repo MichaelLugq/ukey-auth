@@ -1,5 +1,6 @@
-#include "utils.h"
+#include "consts.h"
 #include "crypto.h"
+#include "utils.h"
 #include "u03-ukey/u03ukey/u03ukey.h"
 
 #include <windows.h>
@@ -8,6 +9,7 @@
 #include <openssl/ec.h>
 #include <openssl/engine.h>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <openssl/ssl.h>
 
 #include <vector>
@@ -46,7 +48,13 @@ void InitOpenssl() {
   CRYPTO_set_id_callback(win32_openssl_thread_id_cb);
 }
 
+void UninitOpenSSL() {
+
+}
+
 #pragma endregion InitOpenssl
+
+#pragma region OpenSSL
 
 template<typename T, typename D>
 std::unique_ptr<T, D> make_handle(T* handle, D deleter) {
@@ -65,11 +73,11 @@ int GenSM2KeyPair(std::vector<BYTE>& pub_key, std::vector<BYTE>& priv_key) {
   unsigned char *priv = NULL, *pub = NULL;
   int publen = 0, prilen =0;
   publen = EC_KEY_key2buf(x, EC_KEY_get_conv_form(x), &pub, NULL);
-  if (publen != 65) {
+  if (publen != kOpenSSLSM2PublicKeySize) {
     return -2;
   }
   prilen = EC_KEY_priv2buf(x, &priv);
-  if (prilen != 32) {
+  if (prilen != kSM2PrivateKeySize) {
     return -3;
   }
 
@@ -78,6 +86,53 @@ int GenSM2KeyPair(std::vector<BYTE>& pub_key, std::vector<BYTE>& priv_key) {
 
   return 0;
 }
+
+int GenSM2KeyPair(SM2KeyPair& keypair) {
+  auto ec_key = make_handle(EC_KEY_new_by_curve_name(NID_sm2), EC_KEY_free);
+
+  EC_KEY* x = ec_key.get();
+
+  if (1 != EC_KEY_generate_key(x)) {
+    return -1;
+  }
+
+  unsigned char *priv = NULL, *pub = NULL;
+  int publen = 0, prilen = 0;
+  publen = EC_KEY_key2buf(x, EC_KEY_get_conv_form(x), &pub, NULL);
+  if (publen != kOpenSSLSM2PublicKeySize) {
+    return -2;
+  }
+  prilen = EC_KEY_priv2buf(x, &priv);
+  if (prilen != kSM2PrivateKeySize) {
+    return -3;
+  }
+
+  keypair.pub_key.assign(pub + 1, pub + 1 + publen - 1);
+  keypair.priv_key.assign(priv, priv + prilen);
+
+  return 0;
+}
+
+int GenRandom(std::vector<BYTE>& random, int num) {
+  random.clear();
+  random.resize(num);
+  if (RAND_bytes(random.data(), num) != 1) {
+    return -1;
+  }
+  return 0;
+}
+
+#pragma endregion OpenSSL
+
+#pragma region U03Key
+
+#define GetHandle()                 \
+  HANDLE handle;                    \
+  ULONG ec = ConnectUSBKey(handle); \
+  if (ec != LS_SUCCESS) {           \
+    return ec;                      \
+  }                                 \
+  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
 
 int ConnectUSBKey(HANDLE& handle) {
   ULONG name_list_size = 0;
@@ -110,15 +165,9 @@ int ConnectUSBKey(HANDLE& handle) {
 }
 
 int SetPIN(const std::vector<BYTE>& pin) {
-  HANDLE handle;
-  ULONG ec = ConnectUSBKey(handle);
-  if (ec != LS_SUCCESS) {
-    return ec;
-  }
+  GetHandle();
 
-  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
-
-  ULONG max_retry_count = 10;
+  ULONG max_retry_count = 8;
   ec = LS_SetPin(handle, (BYTE*)&pin[0], pin.size(), max_retry_count);
   if (ec != LS_SUCCESS) {
     return ec;
@@ -128,13 +177,7 @@ int SetPIN(const std::vector<BYTE>& pin) {
 }
 
 int VerifyPIN(const std::vector<BYTE>& pin) {
-  HANDLE handle;
-  ULONG ec = ConnectUSBKey(handle);
-  if (ec != LS_SUCCESS) {
-    return ec;
-  }
-
-  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
+  GetHandle();
 
   ULONG retry_count = 0;
   ec = LS_VerifyPIN(handle, (BYTE*)&pin[0], pin.size(), &retry_count);
@@ -146,13 +189,7 @@ int VerifyPIN(const std::vector<BYTE>& pin) {
 }
 
 int ImportKeyPairToU03Key(const std::vector<BYTE>& pub_key, const std::vector<BYTE>& priv_key) {
-  HANDLE handle;
-  ULONG ec = ConnectUSBKey(handle);
-  if (ec != LS_SUCCESS) {
-    return ec;
-  }
-
-  auto handle_ptr = make_handle(handle, LS_DisConnectDev);
+  GetHandle();
 
   ec = LS_ImportKeyPair(handle, (BYTE*)pub_key.data(), pub_key.size(),
                         (BYTE*)priv_key.data(), priv_key.size());
@@ -163,9 +200,141 @@ int ImportKeyPairToU03Key(const std::vector<BYTE>& pub_key, const std::vector<BY
   return 0;
 }
 
-int ImportAllPubKey(const std::vector<PubkeyInfo>& pubkey_info) {
+int WriteAllKeyPairsToFile(const std::vector<SM2KeyPair>& keypairs) {
+  GetHandle();
+  // 1、检查是否管理员
+  // 2、检查是否已经生成过
   return 0;
 }
+
+int ReadAllKeyPairsFromFile(std::vector<SM2KeyPair>& keypairs) {
+  GetHandle();
+  // 1、检查是否管理员
+  // 2、检查是否已经生成过
+  // 3、读取公私钥的总个数
+  // 4、读取所有公私钥
+  return 0;
+}
+
+int WriteAllPubKeyToU03Key(const std::vector<std::vector<BYTE>>& pubkeys) {
+  GetHandle();
+
+  // The main difference between vector resize() and vector reserve() is that resize() is used to change
+  // the size of vector where reserve() doesn’t. reserve() is only used to store at least the number of
+  // the specified elements without having to reallocate memory. But in resize() if the number is smaller
+  // than the current number then it resizes the memory and deletes the excess space over it.
+
+  std::vector<BYTE> buf;
+  buf.reserve(pubkeys.size() * kSM2PublicKeySize);
+  for (auto& pubkey : pubkeys) {
+    buf.insert(buf.begin(), pubkey.begin(), pubkey.end());
+  }
+
+  return 0;
+}
+
+int SM2Encrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  GetHandle();
+
+  out.clear();
+  ULONG outlen = in.size() + 100;
+  out.resize(outlen);
+  ec = LS_AsymEncrypt(handle, (BYTE*)in.data(), in.size(), out.data(), &outlen);
+  if (ec != LS_SUCCESS) {
+    out.resize(0);
+    return ec;
+  }
+  out.resize(outlen);
+
+  return 0;
+}
+
+int SM2Decrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  GetHandle();
+
+  out.clear();
+  ULONG outlen = in.size();
+  out.resize(outlen);
+  ec = LS_AsymDecrypt(handle, (BYTE*)in.data(), in.size(), out.data(), &outlen);
+  if (ec != LS_SUCCESS) {
+    out.resize(0);
+    return ec;
+  }
+  out.resize(outlen);
+
+  return 0;
+}
+
+int SM4Encrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  GetHandle();
+
+  LS_SymmCipherParam param;
+  param.group_type = LS_ECB;
+  param.iv_len = 16;
+  param.padding_type = LS_PADDING_PKCS_5;
+  std::memset(param.iv, 0, param.iv_len);
+  ec = LS_SymmEncryptInit(handle, param, (BYTE*)key.data(), key.size());
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  out.clear();
+  ULONG outlen = in.size() + 16;
+  out.resize(outlen);
+  ec = LS_SymmEncrypt(handle, (BYTE*)in.data(), in.size(), out.data(), &outlen);
+  if (ec != LS_SUCCESS) {
+    out.resize(0);
+    return ec;
+  }
+  out.resize(outlen);
+
+  return 0;
+}
+
+int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  GetHandle();
+
+  LS_SymmCipherParam param;
+  param.group_type = LS_ECB;
+  param.iv_len = 16;
+  param.padding_type = LS_PADDING_PKCS_5;
+  std::memset(param.iv, 0, param.iv_len);
+  ec = LS_SymmDecryptInit(handle, param, (BYTE*)key.data(), key.size());
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  out.clear();
+  ULONG outlen = in.size();
+  out.resize(outlen);
+  ec = LS_SymmDecrypt(handle, (BYTE*)in.data(), in.size(), out.data(), &outlen);
+  if (ec != LS_SUCCESS) {
+    out.resize(0);
+    return ec;
+  }
+  out.resize(outlen);
+
+  return 0;
+}
+
+//int SignData(const std::vector<BYTE>& priv_key, const std::vector<BYTE>& in,
+//             std::vector<BYTE>& out) {
+//  GetHandle();
+//
+//  out.clear();
+//  ULONG outlen = in.size();
+//  ec = LS_SignDataUseImportedKey(handle, (BYTE*)priv_key.data(), priv_key.size(),
+//                                 (BYTE*)in.data(), in.size(), out.data(), &outlen);
+//  return 0;
+//}
+//
+//int VerifyData(const std::vector<BYTE>& priv_key, const std::vector<BYTE>& data,
+//               const std::vector<BYTE>& sign) {
+//  GetHandle();
+//  return 0;
+//}
+
+#pragma endregion U03Key
 
 // template<typename T, typename D>
 // std::unique_ptr<T, D> make_handle(T* handle, D deleter) {
