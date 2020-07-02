@@ -55,18 +55,14 @@
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
              <widget class="QLineEdit" name="edit_name">
+              <property name="minimumSize">
+               <size>
+                <width>160</width>
+                <height>0</height>
+               </size>
+              </property>
               <property name="placeholderText">
                <string>Name</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="edit_index">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-              <property name="placeholderText">
-               <string>Index</string>
               </property>
              </widget>
             </item>
@@ -86,9 +82,16 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="btn_write">
+           <widget class="QPushButton" name="btn_add">
             <property name="text">
-             <string>Input</string>
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_update">
+            <property name="text">
+             <string>Update</string>
             </property>
            </widget>
           </item>
@@ -105,7 +108,7 @@
            <widget class="QComboBox" name="comboBox">
             <property name="minimumSize">
              <size>
-              <width>227</width>
+              <width>160</width>
               <height>0</height>
              </size>
             </property>
@@ -123,6 +126,13 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_delete">
+            <property name="text">
+             <string>Delete</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="btn_download">
@@ -178,9 +188,6 @@
     </widget>
    </item>
   </layout>
-  <zorder>stackedWidget</zorder>
-  <zorder>group_current_user</zorder>
-  <zorder>group_all_user</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

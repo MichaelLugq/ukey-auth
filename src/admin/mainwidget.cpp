@@ -20,6 +20,11 @@ namespace fs = std::filesystem;
 static const int kPageGenerateIndex = 0;
 static const int kPageOperatorIndex = 1;
 
+#define SetDisable(btn)                                          \
+  btn->setEnabled(false);                                        \
+  auto set_enabled = [&](BYTE*) { btn->setEnabled(true); };      \
+  std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
+
 void MsgBox(const QString& msg) {
   QMessageBox msgBox;
   msgBox.setText(msg);
@@ -32,18 +37,15 @@ MainWidget::MainWidget(QWidget *parent) :
   ui->setupUi(this);
 
   this->setFixedSize(600, 450);
-
-  ui->edit_index->hide();
+  this->setWindowTitle("Administrator");
 
   ui->comboBox->setEditable(false);
 
   UpdateComboBox();
 
-  // 密钥对文件检查
+  // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
   {
-    // 检查密钥对文件是否存在
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
-    // 存在：直接跳转；不存在：不跳转
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
   }
@@ -84,11 +86,9 @@ MainWidget::MainWidget(QWidget *parent) :
     }
   });
 
-  connect(ui->btn_write, &QPushButton::clicked, this, [&]() {
+  connect(ui->btn_add, &QPushButton::clicked, this, [&]() {
     // 置灰
-    ui->btn_write->setEnabled(false);
-    auto set_enabled = [&](BYTE*) { ui->btn_write->setEnabled(true); };
-    std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
+    SetDisable(ui->btn_add);
 
     // 检查name是否为空
     QString name = ui->edit_name->text();
@@ -99,9 +99,11 @@ MainWidget::MainWidget(QWidget *parent) :
 
     // 检查index.db是否存在，如果存在则读取
     proto::IndexInfo indexs;
+    bool index_db = false;
     {
       std::fstream input("index.db", std::ios::in | std::ios::binary);
       if (input) {
+        index_db = true;
         if (!indexs.ParseFromIstream(&input)) {
           MsgBox("index file exists, but failed to read");
           return;
@@ -198,6 +200,26 @@ MainWidget::MainWidget(QWidget *parent) :
 
     // 导入身份信息（name + index）,可作为是否已经下发的标记
 
+    // 备份
+    {
+      if (index_db) {
+        fs::path old_path = fs::current_path().append("index.db");
+        std::time_t tmt = std::time(nullptr);
+        std::tm* stdtm = std::localtime(&tmt);
+        char mbstr[100];
+        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
+        std::string smsbstr(mbstr);
+        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
+        [](unsigned char c) -> unsigned char {
+          if (c == ':')
+            return '-';
+          return c;
+        });
+        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
+        fs::rename(old_path, new_path);
+      }
+    }
+
     // 写入index.db
     {
       auto added = indexs.add_index();
@@ -211,17 +233,175 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // 从index.db读取信息到comboBox
-    {
-      ui->comboBox->clear();
-      QStringList list;
-      for (int i = 0; i < indexs.index_size(); ++i) {
-        list.push_back(QString::fromStdString(indexs.index(i).name()));
-      }
-      ui->comboBox->addItems(list);
-    }
+    // 重新加载
+    UpdateComboBox();
 
     //
+    MsgBox("Success");
+  });
+
+  connect(ui->btn_delete, &QPushButton::clicked, this, [&]() {
+    // 置灰
+    SetDisable(ui->btn_delete);
+
+    // 获取comboBox的当前名称
+    QString name = ui->comboBox->currentText();
+
+    // 读取index.db
+    proto::IndexInfo indexs;
+    bool index_db = false;
+    {
+      std::fstream input("index.db", std::ios::in | std::ios::binary);
+      if (!input) {
+        MsgBox("Failed to find index.db");
+        return;
+      } else {
+        index_db = true;
+      }
+      if (!indexs.ParseFromIstream(&input)) {
+        MsgBox("index file exists, but failed to read");
+        return;
+      }
+    }
+
+    // 从index.db中删除此条记录
+    {
+      bool found = false;
+      for (auto it = indexs.mutable_index()->begin(); it != indexs.mutable_index()->end(); ++it) {
+        if (it->name() == name.toStdString()) {
+          indexs.mutable_index()->erase(it);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        MsgBox("Cannot find the name to delete");
+        return;
+      }
+    }
+
+    // 备份
+    {
+      if (index_db) {
+        fs::path old_path = fs::current_path().append("index.db");
+        std::time_t tmt = std::time(nullptr);
+        std::tm* stdtm = std::localtime(&tmt);
+        char mbstr[100];
+        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
+        std::string smsbstr(mbstr);
+        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
+        [](unsigned char c) -> unsigned char {
+          if (c == ':')
+            return '-';
+          return c;
+        });
+        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
+        fs::rename(old_path, new_path);
+      }
+    }
+
+    // 写回
+    {
+      std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
+      if (!indexs.SerializeToOstream(&output)) {
+        MsgBox("Failed to write index.db");
+        return;
+      }
+    }
+
+    // 重新加载
+    UpdateComboBox();
+
+    MsgBox("Success");
+  });
+
+  connect(ui->btn_update, &QPushButton::clicked, this, [&]() {
+    // 置灰
+    SetDisable(ui->btn_update);
+
+    // 检查name是否为空
+    QString name = ui->edit_name->text();
+    if (name.isEmpty()) {
+      MsgBox("Please input the user name.");
+      return;
+    }
+
+    // 检查index.db是否存在，如果存在则读取
+    proto::IndexInfo indexs;
+    bool index_db = false;
+    {
+      std::fstream input("index.db", std::ios::in | std::ios::binary);
+      if (input) {
+        index_db = true;
+        if (!indexs.ParseFromIstream(&input)) {
+          MsgBox("index file exists, but failed to read");
+          return;
+        }
+      }
+    }
+
+    // 检查name是否重名
+    {
+      bool dup_name = false;
+      for (int i = 0; i < indexs.index_size(); ++i) {
+        if (name.toStdString() == indexs.index(i).name()) {
+          dup_name = true;
+        }
+      }
+      if (dup_name) {
+        MsgBox("duplication of name");
+        return;
+      }
+    }
+
+    // 重命名
+    {
+      bool found = false;
+      auto current_text = ui->comboBox->currentText().toStdString();
+      for (int i = 0; i < indexs.index_size(); ++i) {
+        if (indexs.index(i).name() == current_text) {
+          indexs.mutable_index(i)->set_name(name.toStdString());
+          found = true;
+        }
+      }
+      if (!found) {
+        MsgBox("Cannot find the name to delete");
+        return;
+      }
+    }
+
+    // 备份
+    {
+      if (index_db) {
+        fs::path old_path = fs::current_path().append("index.db");
+        std::time_t tmt = std::time(nullptr);
+        std::tm* stdtm = std::localtime(&tmt);
+        char mbstr[100];
+        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
+        std::string smsbstr(mbstr);
+        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
+        [](unsigned char c) -> unsigned char {
+          if (c == ':')
+            return '-';
+          return c;
+        });
+        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
+        fs::rename(old_path, new_path);
+      }
+    }
+
+    // 写回
+    {
+      std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
+      if (!indexs.SerializeToOstream(&output)) {
+        MsgBox("Failed to write index.db");
+        return;
+      }
+    }
+
+    // 重新加载
+    UpdateComboBox();
+
     MsgBox("Success");
   });
 
@@ -265,7 +445,9 @@ void MainWidget::UpdateComboBox() {
     ui->comboBox->clear();
     QStringList list;
     for (int i = 0; i < indexs.index_size(); ++i) {
-      list.push_back(QString::fromStdString(indexs.index(i).name()));
+      const auto& name = QString::fromStdString(indexs.index(i).name());
+      const auto& index = QString::fromStdString(std::to_string(indexs.index(i).index()));
+      list.push_back(name/* + ":" + index*/);
     }
     ui->comboBox->addItems(list);
   }
