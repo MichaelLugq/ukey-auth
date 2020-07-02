@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package proto;
+
+// 用户的公钥索引
+message NameIndex {
+  // 姓名
+  string name = 1;
+
+  // 索引
+  int32 index = 2;
+}
+
+message IndexInfo {
+  //
+  repeated NameIndex index = 1;
+}

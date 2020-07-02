@@ -61,32 +61,6 @@ std::unique_ptr<T, D> make_handle(T* handle, D deleter) {
   return std::unique_ptr<T, D> {handle, deleter};
 }
 
-int GenSM2KeyPair(std::vector<BYTE>& pub_key, std::vector<BYTE>& priv_key) {
-  auto ec_key = make_handle(EC_KEY_new_by_curve_name(NID_sm2), EC_KEY_free);
-
-  EC_KEY* x = ec_key.get();
-
-  if (1 != EC_KEY_generate_key(x)) {
-    return -1;
-  }
-
-  unsigned char *priv = NULL, *pub = NULL;
-  int publen = 0, prilen =0;
-  publen = EC_KEY_key2buf(x, EC_KEY_get_conv_form(x), &pub, NULL);
-  if (publen != kOpenSSLSM2PublicKeySize) {
-    return -2;
-  }
-  prilen = EC_KEY_priv2buf(x, &priv);
-  if (prilen != kSM2PrivateKeySize) {
-    return -3;
-  }
-
-  pub_key.assign(pub + 1, pub + 1 + publen - 1);
-  priv_key.assign(priv, priv + prilen);
-
-  return 0;
-}
-
 int GenSM2KeyPair(SM2KeyPair& keypair) {
   auto ec_key = make_handle(EC_KEY_new_by_curve_name(NID_sm2), EC_KEY_free);
 
@@ -188,11 +162,11 @@ int VerifyPIN(const std::vector<BYTE>& pin) {
   return 0;
 }
 
-int ImportKeyPairToU03Key(const std::vector<BYTE>& pub_key, const std::vector<BYTE>& priv_key) {
+int ImportKeyPairToUKey(const SM2KeyPair& keypair) {
   GetHandle();
 
-  ec = LS_ImportKeyPair(handle, (BYTE*)pub_key.data(), pub_key.size(),
-                        (BYTE*)priv_key.data(), priv_key.size());
+  ec = LS_ImportKeyPair(handle, (BYTE*)keypair.pub_key.data(), keypair.pub_key.size(),
+                        (BYTE*)keypair.priv_key.data(), keypair.priv_key.size());
   if (ec != LS_SUCCESS) {
     return ec;
   }
@@ -200,36 +174,37 @@ int ImportKeyPairToU03Key(const std::vector<BYTE>& pub_key, const std::vector<BY
   return 0;
 }
 
-int WriteAllKeyPairsToFile(const std::vector<SM2KeyPair>& keypairs) {
-  GetHandle();
-  // 1、检查是否管理员
-  // 2、检查是否已经生成过
-  return 0;
-}
-
-int ReadAllKeyPairsFromFile(std::vector<SM2KeyPair>& keypairs) {
-  GetHandle();
-  // 1、检查是否管理员
-  // 2、检查是否已经生成过
-  // 3、读取公私钥的总个数
-  // 4、读取所有公私钥
-  return 0;
-}
-
-int WriteAllPubKeyToU03Key(const std::vector<std::vector<BYTE>>& pubkeys) {
-  GetHandle();
-
-  // The main difference between vector resize() and vector reserve() is that resize() is used to change
-  // the size of vector where reserve() doesn’t. reserve() is only used to store at least the number of
-  // the specified elements without having to reallocate memory. But in resize() if the number is smaller
-  // than the current number then it resizes the memory and deletes the excess space over it.
-
-  std::vector<BYTE> buf;
-  buf.reserve(pubkeys.size() * kSM2PublicKeySize);
-  for (auto& pubkey : pubkeys) {
-    buf.insert(buf.begin(), pubkey.begin(), pubkey.end());
+int WriteToUKey(int sector_offset, const std::vector<BYTE>& data) {
+  if (data.size() % 4096 != 0) {
+    return -1;
   }
+  GetHandle();
 
+  ULONG sector_size = data.size() / 4096;
+  ULONG sectors_written = 0;
+  ec = LS_Write(handle, sector_offset, sector_size, (BYTE*)data.data(), &sectors_written);
+  if (ec != 0) {
+    return ec;
+  }
+  if (sectors_written != sector_size) {
+    return -2;
+  }
+  return 0;
+}
+
+int ReadFromUKey(int sector_offset, int sector_size, std::vector<BYTE>& data) {
+  data.clear();
+  GetHandle();
+
+  ULONG sector_read = 0;
+  data.resize(sector_size * 4096);
+  ec = LS_Read(handle, sector_offset, sector_size, data.data(), &sector_read);
+  if (ec != 0) {
+    return ec;
+  }
+  if (sector_read != sector_size) {
+    return -2;
+  }
   return 0;
 }
 
@@ -317,85 +292,4 @@ int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::v
   return 0;
 }
 
-//int SignData(const std::vector<BYTE>& priv_key, const std::vector<BYTE>& in,
-//             std::vector<BYTE>& out) {
-//  GetHandle();
-//
-//  out.clear();
-//  ULONG outlen = in.size();
-//  ec = LS_SignDataUseImportedKey(handle, (BYTE*)priv_key.data(), priv_key.size(),
-//                                 (BYTE*)in.data(), in.size(), out.data(), &outlen);
-//  return 0;
-//}
-//
-//int VerifyData(const std::vector<BYTE>& priv_key, const std::vector<BYTE>& data,
-//               const std::vector<BYTE>& sign) {
-//  GetHandle();
-//  return 0;
-//}
-
 #pragma endregion U03Key
-
-// template<typename T, typename D>
-// std::unique_ptr<T, D> make_handle(T* handle, D deleter) {
-//   return std::unique_ptr<T, D> {handle, deleter};
-// }
-//
-// void print_openssl_error(std::string const& function) {
-//   char buffer[1024];
-//   ERR_error_string_n(ERR_get_error(), buffer, sizeof(buffer));
-//   std::cerr << "openssl function " << function << " failed with " << buffer << "\n";
-// }
-//
-// bool create_ec_private_key() {
-//   // Create the context for the key generation
-//   auto kctx = make_handle(EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr), EVP_PKEY_CTX_free);
-//   if(!kctx) {
-//     print_openssl_error("EVP_PKEY_CTX_new");
-//     return false;
-//   }
-//
-//   // Generate the key
-//   if(1 != EVP_PKEY_keygen_init(kctx.get())) {
-//     print_openssl_error("EVP_PKEY_keygen_init");
-//     return false;
-//   }
-//
-//   //  We're going to use the ANSI X9.62 Prime 256v1 curve
-//   if(1 != EVP_PKEY_CTX_set_ec_paramgen_curve_nid(kctx.get(), NID_sm2)) {
-//     print_openssl_error("EVP_PKEY_CTX_set_ec_paramgen_curve_nid");
-//     return false;
-//   }
-//
-//   EVP_PKEY *pkey_temp = nullptr;
-//   if (1 != EVP_PKEY_keygen(kctx.get(), &pkey_temp)) {
-//     print_openssl_error("EVP_PKEY_keygen");
-//     return false;
-//   }
-//
-//   // write out to pem file
-//   auto pkey = make_handle(pkey_temp, EVP_PKEY_free);
-//
-//   auto file = make_handle(BIO_new_file("ecprivatekey.pem", "w"), BIO_free);
-//   if(!file) {
-//     print_openssl_error("BIO_new_file");
-//     return false;
-//   }
-//
-//   if(!PEM_write_bio_PrivateKey(file.get(), pkey.get(), nullptr, nullptr, 0, nullptr, nullptr)) {
-//     print_openssl_error("PEM_write_bio_PrivateKey");
-//     return false;
-//   }
-//   BIO_flush(file.get());
-//
-//   {
-//     unsigned char *priv = NULL, *pub = NULL;
-//     EC_KEY* x = EVP_PKEY_get1_EC_KEY(pkey.get());
-//     int publen = EC_KEY_key2buf(x, EC_KEY_get_conv_form(x), &pub, NULL);
-//     int prilen = EC_KEY_priv2buf(x, &priv);
-//     return true;
-//   }
-//
-//   return true;
-// }
-

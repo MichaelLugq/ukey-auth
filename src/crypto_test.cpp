@@ -3,8 +3,8 @@
 int main() {
   InitOpenssl();
 
-  std::vector<BYTE> pub_key, priv_key;
-  int ec = GenSM2KeyPair(pub_key, priv_key);
+  SM2KeyPair skp;
+  int ec = GenSM2KeyPair(skp);
   if (0 != ec) {
     return ec;
   }
@@ -26,7 +26,7 @@ int main() {
     return ec;
   }
 
-  ec = ImportKeyPairToU03Key(pub_key, priv_key);
+  ec = ImportKeyPairToUKey(skp);
   if (0 != ec) {
     return ec;
   }
