@@ -4,13 +4,6 @@
 
 typedef unsigned char BYTE;
 
-typedef struct _tagPubkeyInfo {
-  // 索引，从0开始，可以通过该索引寻找公钥
-  int index;
-  // 使用者姓名
-  std::string name;
-} IndexInfo;
-
 typedef struct _tagSM2KeyPair {
   std::vector<BYTE> pub_key;
   std::vector<BYTE> priv_key;
@@ -46,6 +39,12 @@ int WriteToUKey(int sector_offset, const std::vector<BYTE>& data);
 
 // 读取存储区
 int ReadFromUKey(int sector_offset, int sector_size, std::vector<BYTE>& data);
+
+// 写私有区
+int WritePrivate(int offset, const std::vector<BYTE>& data);
+
+// 读私有区
+int ReadPrivate(int offset, int bytes, std::vector<BYTE>& data);
 
 // SM2加密
 int SM2Encrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out);

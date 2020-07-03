@@ -7,6 +7,13 @@
 
 #include <string>
 
+// 错误码
+static const int kSuccess = 0;
+static const int kNoDevice = -101;
+static const int kTooManyDevice = -102;
+static const int kErrConnect = -103;
+static const int kNoWrittenFlag = -104;
+
 // 由于OpenSSL导出的公钥中存在0x04标记，因此增加了一个字节
 static const int kOpenSSLSM2PublicKeySize = 65;
 
@@ -19,10 +26,16 @@ static const int kSM2PrivateKeySize = 32;
 // 生成的密钥对总个数
 static const int kSM2KeyPairCount = 1024;
 
+// 用户区大小
+static const int kUserRegionSize = 512;
+
 // 公钥的存储起始位置
 //
 // 4K Byte为单位,
 static const int kPublicKeyStartPosition = 256 * 0;
 
-// 用户名和索引的存储起始位置
-static const int kUserInfoStartPosition  = 256 * 10;
+// 本用户的用户名和索引的存储起始位置
+static const int kLocalUserInfoStartPosition  = 256 * 8;
+
+// 其他用户的用户名和索引的存储起始位置
+static const int kOtherUsersInfoStartPosition = 256 * 16;

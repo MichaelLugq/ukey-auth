@@ -13,6 +13,7 @@
 #include <openssl/ssl.h>
 
 #include <vector>
+#include <sstream>
 
 #pragma region InitOpenssl
 
@@ -103,20 +104,27 @@ int GenRandom(std::vector<BYTE>& random, int num) {
 #define GetHandle()                 \
   HANDLE handle;                    \
   ULONG ec = ConnectUSBKey(handle); \
-  if (ec != LS_SUCCESS) {           \
+  if (ec != kSuccess) {             \
     return ec;                      \
   }                                 \
   auto handle_ptr = make_handle(handle, LS_DisConnectDev);
 
 int ConnectUSBKey(HANDLE& handle) {
+  ULONG ec;
+
   ULONG name_list_size = 0;
-  if (LS_EnumDev(nullptr, &name_list_size) != LS_SUCCESS) {
-    return -1;
+  ec = LS_EnumDev(nullptr, &name_list_size);
+  if (ec != LS_SUCCESS) {
+    if (ec == LS_NO_DEVICES) {
+      return kNoDevice;
+    }
+    return ec;
   }
 
   auto name_list = std::shared_ptr<char>(new char[name_list_size], [](char* p) {delete[] p; });
-  if (LS_EnumDev(name_list.get(), &name_list_size) != LS_SUCCESS) {
-    return -2;
+  ec = LS_EnumDev(name_list.get(), &name_list_size);
+  if (ec != LS_SUCCESS) {
+    return ec;
   }
 
   std::vector<std::string> name_vector;
@@ -126,16 +134,15 @@ int ConnectUSBKey(HANDLE& handle) {
   }
 
   if (GetLSSDDevice(name_vector, u03_devices) != 1) {
-    return -4;
+    return kTooManyDevice;
   }
 
-  ULONG ec;
   ec = LS_ConnectDev((LPSTR)u03_devices[0].c_str(), &handle);
   if (ec != LS_SUCCESS) {
-    return ec;
+    return kErrConnect;
   }
 
-  return LS_SUCCESS;
+  return kSuccess;
 }
 
 int SetPIN(const std::vector<BYTE>& pin) {
@@ -206,6 +213,25 @@ int ReadFromUKey(int sector_offset, int sector_size, std::vector<BYTE>& data) {
     return -2;
   }
   return 0;
+}
+
+int WritePrivate(int offset, const std::vector<BYTE>& data) {
+  GetHandle();
+  ec = LS_WritePrivate(handle, data.size(), (BYTE*)data.data());
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+  return kSuccess;
+}
+
+int ReadPrivate(int offset, int bytes, std::vector<BYTE>& data) {
+  GetHandle();
+  data.resize(bytes);
+  ec = LS_ReadPrivate(handle, 0, bytes, (BYTE*)data.data());
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+  return kSuccess;
 }
 
 int SM2Encrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out) {

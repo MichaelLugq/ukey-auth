@@ -28,10 +28,32 @@ set(CMAKE_AUTORCC ON)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # Qt End
 
+# proto_test
+add_executable(proto_test 
+  utils.cpp
+  crypto.cpp
+  proto.cpp
+  proto_test.cpp
+  ${secret_PROTO_SRCS}
+  ${secret_PROTO_HDR}
+  ${index_PROTO_SRCS}
+  ${index_PROTO_HDR}
+)
+target_include_directories(proto_test PUBLIC 
+  ${PROTOBUF_INCLUDE_DIRS}
+)
+target_link_libraries(proto_test PUBLIC
+  OpenSSL::Crypto
+  OpenSSL::SSL
+  protobuf::libprotobuf
+  u03ukey
+)
+
 # admin
 add_executable(admin WIN32
   utils.cpp
   crypto.cpp
+  proto.cpp
   admin/main.cpp
   admin/mainwidget.cpp
   admin/mainwidget.h

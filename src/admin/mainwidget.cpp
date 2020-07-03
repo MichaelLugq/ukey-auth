@@ -4,6 +4,7 @@
 #include "consts.h"
 #include "utils.h"
 #include "crypto.h"
+#include "proto.h"
 
 #include "secret.pb.h"
 #include "index.pb.h"
@@ -14,6 +15,7 @@
 #include <cassert>
 #include <fstream>
 #include <filesystem>
+#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -62,7 +64,8 @@ MainWidget::MainWidget(QWidget *parent) :
         SM2KeyPair keypair;
         ec = GenSM2KeyPair(keypair);
         if (0 != ec) {
-          return ec;
+          MsgBox("Failed to generate key pair");
+          return;
         }
         keys.emplace_back(std::move(keypair));
       }
@@ -89,6 +92,16 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_add, &QPushButton::clicked, this, [&]() {
     // 置灰
     SetDisable(ui->btn_add);
+
+    // 检查是否空的USB Key，非空直接提示并返回
+    {
+      proto::NameIndex usrindex;
+      auto ec = ReadUserIndex(usrindex);
+      if (ec != kNoWrittenFlag) {
+        MsgBox(tr("Has been written"));
+        return;
+      }
+    }
 
     // 检查name是否为空
     QString name = ui->edit_name->text();
@@ -182,7 +195,8 @@ MainWidget::MainWidget(QWidget *parent) :
       }
       assert(pubs.size() % 4096 == 0);
 
-      int ec = WriteToUKey(kPublicKeyStartPosition, pubs);
+      int sector_offset = kPublicKeyStartPosition;
+      int ec = WriteToUKey(sector_offset, pubs);
       if (ec != 0) {
         MsgBox("Failed to import public key to USB Key");
         return;
@@ -190,15 +204,96 @@ MainWidget::MainWidget(QWidget *parent) :
 
       // Test: read public keys
       std::vector<BYTE> test_pub;
+      sector_offset = kPublicKeyStartPosition;
       ULONG sector_read = kSM2KeyPairCount * 64 / 4096;
-      ec = ReadFromUKey(kPublicKeyStartPosition, sector_read, test_pub);
+      ec = ReadFromUKey(sector_offset, sector_read, test_pub);
       if (ec != 0) {
         MsgBox("Failed to read public key from USB Key");
         return;
       }
     }
 
+    // 更新indexs
+    {
+      auto added = indexs.add_index();
+      added->set_name(name.toStdString());
+      added->set_index(current_index);
+    }
+
     // 导入身份信息（name + index）,可作为是否已经下发的标记
+    {
+      // 本地用户（写）
+      {
+        proto::NameIndex usrindex;
+        usrindex.set_name(name.toStdString());
+        usrindex.set_index(current_index);
+        int ec = WriteUserIndex(usrindex);
+        if (ec != kSuccess) {
+          MsgBox(tr("Failed to write user index"));
+          return;
+        }
+      }
+
+      // 本地用户（读）
+      {
+        proto::NameIndex usrindex;
+        int ec = ReadUserIndex(usrindex);
+        if (ec != kSuccess) {
+          MsgBox(tr("Failed to read user index"));
+          return;
+        }
+        assert(name.toStdString() == usrindex.name());
+        assert(current_index == usrindex.index());
+      }
+
+      // 其他用户（写）
+      {
+        std::ostringstream output;
+        if (!indexs.SerializeToOstream(&output)) {
+          MsgBox(tr("Failed to write other users data to stream"));
+          return;
+        }
+        std::string str = output.str();
+        std::vector<BYTE> info(4096 * 4, 0);
+        int write_bytes = str.size();
+        int write_offset = sizeof(int);
+        std::memcpy(info.data(), &write_bytes, write_offset);
+        std::memcpy(info.data() + write_offset, str.data(), write_bytes);
+        int sector_offset = kOtherUsersInfoStartPosition;
+        int ec = WriteToUKey(sector_offset, info);
+        if (ec != 0) {
+          MsgBox(tr("Failed to write other users data to USB Key"));
+          return;
+        }
+      }
+
+      // 其他用户（读）
+      {
+        std::vector<BYTE> info(4096 * 4, 0);
+        int sector_offset = kOtherUsersInfoStartPosition;
+        int ec = ReadFromUKey(sector_offset, 4, info);
+        if (ec != 0) {
+          MsgBox(tr("Failed to read other users data from USB Key"));
+          return;
+        }
+
+        int read_bytes = 0;
+        int read_offset = sizeof(int);
+        std::memcpy(&read_bytes, info.data(), read_offset);
+        std::string str(read_bytes, 0);
+        std::memcpy(str.data(), info.data() + read_offset, read_bytes);
+
+        std::istringstream input;
+        input.str(str);
+        proto::IndexInfo infos;
+        if (!infos.ParseFromIstream(&input)) {
+          MsgBox(tr("Failed to parse other users data from stream"));
+          return;
+        }
+
+        assert(infos.index_size() == indexs.index_size());
+      }
+    }
 
     // 备份
     {
@@ -222,10 +317,6 @@ MainWidget::MainWidget(QWidget *parent) :
 
     // 写入index.db
     {
-      auto added = indexs.add_index();
-      added->set_name(name.toStdString());
-      added->set_index(current_index);
-
       std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
       if (!indexs.SerializeToOstream(&output)) {
         MsgBox("Failed to write index.db");
@@ -243,6 +334,8 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_delete, &QPushButton::clicked, this, [&]() {
     // 置灰
     SetDisable(ui->btn_delete);
+
+    // 检查是否对应的USB Key
 
     // 获取comboBox的当前名称
     QString name = ui->comboBox->currentText();
