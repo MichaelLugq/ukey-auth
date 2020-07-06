@@ -13,6 +13,9 @@ static const int kNoDevice = -101;
 static const int kTooManyDevice = -102;
 static const int kErrConnect = -103;
 static const int kNoWrittenFlag = -104;
+static const int kNoIndexDB = -105;
+static const int kErrParseProto = -106;
+static const int kNoSecretDB = -107;
 
 // 由于OpenSSL导出的公钥中存在0x04标记，因此增加了一个字节
 static const int kOpenSSLSM2PublicKeySize = 65;

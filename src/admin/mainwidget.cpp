@@ -72,20 +72,20 @@ MainWidget::MainWidget(QWidget *parent) :
     }
 
     // 写入文件
-    proto::SecretInfo secrets;
-    {
-      for (auto& key : keys) {
-        auto kp = secrets.add_keypair();
-        kp->set_pub_key(key.pub_key.data(), key.pub_key.size());
-        kp->set_priv_key(key.priv_key.data(), key.priv_key.size());
-      }
+    if (WriteSecrets(keys) != kSuccess) {
+      MsgBox(tr("Failed to generate key pairs."));
+      return;
+    } else {
+      ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
+    }
 
-      std::fstream output("secret.db", std::ios::out | std::ios::trunc | std::ios::binary);
-      if (!secrets.SerializeToOstream(&output)) {
-        MsgBox("Failed to generate key pairs.");
-      } else {
-        ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
-      }
+    // 读取文件
+    std::vector<SM2KeyPair> copy_keys;
+    if (ReadSecrets(copy_keys) != kSuccess) {
+      MsgBox(tr("Failed to read key pairs."));
+      return;
+    } else {
+      assert(copy_keys.size() == keys.size());
     }
   });
 
@@ -106,21 +106,18 @@ MainWidget::MainWidget(QWidget *parent) :
     // 检查name是否为空
     QString name = ui->edit_name->text();
     if (name.isEmpty()) {
-      MsgBox("Please input the user name.");
+      MsgBox(tr("Please input the user name."));
       return;
     }
 
     // 检查index.db是否存在，如果存在则读取
     proto::IndexInfo indexs;
-    bool index_db = false;
     {
-      std::fstream input("index.db", std::ios::in | std::ios::binary);
-      if (input) {
-        index_db = true;
-        if (!indexs.ParseFromIstream(&input)) {
-          MsgBox("index file exists, but failed to read");
-          return;
-        }
+      int ec = ReadLocalIndexs(indexs);
+      if (ec == kNoIndexDB) {
+      } else if (ec != kSuccess) {
+        MsgBox(tr("index file exists, but failed to read"));
+        return;
       }
     }
 
@@ -133,28 +130,18 @@ MainWidget::MainWidget(QWidget *parent) :
         }
       }
       if (dup_name) {
-        MsgBox("duplication of name");
+        MsgBox(tr("duplication of name"));
         return;
       }
     }
 
     // 读取所有公私钥：从中获取指定索引的密钥对、所有公钥
-    proto::SecretInfo secrets;
     std::vector<SM2KeyPair> keys;
     {
-      std::fstream input("secret.db", std::ios::in | std::ios::binary);
-      if (!input) {
-        MsgBox("Failed to get key pairs");
+      int ec = ReadSecrets(keys);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read secret.db"));
         return;
-      } else if (!secrets.ParseFromIstream(&input)) {
-        MsgBox("Failed to parse secret.db");
-        return;
-      }
-      for (int i = 0; i < secrets.keypair_size(); ++i) {
-        SM2KeyPair key;
-        key.pub_key.assign(secrets.keypair(i).pub_key().begin(), secrets.keypair(i).pub_key().end());
-        key.priv_key.assign(secrets.keypair(i).priv_key().begin(), secrets.keypair(i).priv_key().end());
-        keys.emplace_back(std::move(key));
       }
     }
 
@@ -248,19 +235,7 @@ MainWidget::MainWidget(QWidget *parent) :
 
       // 其他用户（写）
       {
-        std::ostringstream output;
-        if (!indexs.SerializeToOstream(&output)) {
-          MsgBox(tr("Failed to write other users data to stream"));
-          return;
-        }
-        std::string str = output.str();
-        std::vector<BYTE> info(4096 * 4, 0);
-        int write_bytes = str.size();
-        int write_offset = sizeof(int);
-        std::memcpy(info.data(), &write_bytes, write_offset);
-        std::memcpy(info.data() + write_offset, str.data(), write_bytes);
-        int sector_offset = kOtherUsersInfoStartPosition;
-        int ec = WriteToUKey(sector_offset, info);
+        int ec = WriteOthersIndex(indexs);
         if (ec != 0) {
           MsgBox(tr("Failed to write other users data to USB Key"));
           return;
@@ -269,24 +244,8 @@ MainWidget::MainWidget(QWidget *parent) :
 
       // 其他用户（读）
       {
-        std::vector<BYTE> info(4096 * 4, 0);
-        int sector_offset = kOtherUsersInfoStartPosition;
-        int ec = ReadFromUKey(sector_offset, 4, info);
-        if (ec != 0) {
-          MsgBox(tr("Failed to read other users data from USB Key"));
-          return;
-        }
-
-        int read_bytes = 0;
-        int read_offset = sizeof(int);
-        std::memcpy(&read_bytes, info.data(), read_offset);
-        std::string str(read_bytes, 0);
-        std::memcpy(str.data(), info.data() + read_offset, read_bytes);
-
-        std::istringstream input;
-        input.str(str);
         proto::IndexInfo infos;
-        if (!infos.ParseFromIstream(&input)) {
+        if (ReadOthersIndex(infos) != kSuccess) {
           MsgBox(tr("Failed to parse other users data from stream"));
           return;
         }
@@ -295,30 +254,9 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // 备份
-    {
-      if (index_db) {
-        fs::path old_path = fs::current_path().append("index.db");
-        std::time_t tmt = std::time(nullptr);
-        std::tm* stdtm = std::localtime(&tmt);
-        char mbstr[100];
-        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
-        std::string smsbstr(mbstr);
-        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
-        [](unsigned char c) -> unsigned char {
-          if (c == ':')
-            return '-';
-          return c;
-        });
-        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
-        fs::rename(old_path, new_path);
-      }
-    }
-
     // 写入index.db
     {
-      std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
-      if (!indexs.SerializeToOstream(&output)) {
+      if (WriteLocalIndexs(indexs) != kSuccess) {
         MsgBox("Failed to write index.db");
         return;
       }
@@ -336,23 +274,37 @@ MainWidget::MainWidget(QWidget *parent) :
     SetDisable(ui->btn_delete);
 
     // 检查是否对应的USB Key
+    std::string name;
+    proto::NameIndex usrindex;
+    {
+      int ec = ReadUserIndex(usrindex);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read user index"));
+        return;
+      }
+      name = usrindex.name();
+    }
 
-    // 获取comboBox的当前名称
-    QString name = ui->comboBox->currentText();
+    // TODO：提示是否删除USB Key中的用户
+
+    // 删除: 删除用户、清空公钥、清空自身公私钥
+    {
+      int ec = ClearUserIndex();
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to clear user index"));
+        return;
+      }
+      // TODO: 清空公钥
+      // TODO: 清空自身公私钥
+    }
 
     // 读取index.db
     proto::IndexInfo indexs;
-    bool index_db = false;
     {
-      std::fstream input("index.db", std::ios::in | std::ios::binary);
-      if (!input) {
-        MsgBox("Failed to find index.db");
-        return;
-      } else {
-        index_db = true;
-      }
-      if (!indexs.ParseFromIstream(&input)) {
-        MsgBox("index file exists, but failed to read");
+      int ec;
+      ec = ReadLocalIndexs(indexs);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read local indexs"));
         return;
       }
     }
@@ -361,7 +313,7 @@ MainWidget::MainWidget(QWidget *parent) :
     {
       bool found = false;
       for (auto it = indexs.mutable_index()->begin(); it != indexs.mutable_index()->end(); ++it) {
-        if (it->name() == name.toStdString()) {
+        if (it->name() == name) {
           indexs.mutable_index()->erase(it);
           found = true;
           break;
@@ -373,30 +325,9 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // 备份
-    {
-      if (index_db) {
-        fs::path old_path = fs::current_path().append("index.db");
-        std::time_t tmt = std::time(nullptr);
-        std::tm* stdtm = std::localtime(&tmt);
-        char mbstr[100];
-        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
-        std::string smsbstr(mbstr);
-        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
-        [](unsigned char c) -> unsigned char {
-          if (c == ':')
-            return '-';
-          return c;
-        });
-        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
-        fs::rename(old_path, new_path);
-      }
-    }
-
     // 写回
     {
-      std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
-      if (!indexs.SerializeToOstream(&output)) {
+      if (WriteLocalIndexs(indexs) != kSuccess) {
         MsgBox("Failed to write index.db");
         return;
       }
@@ -412,24 +343,34 @@ MainWidget::MainWidget(QWidget *parent) :
     // 置灰
     SetDisable(ui->btn_update);
 
+    std::string new_name = ui->edit_name->text().toStdString();
+
+    // 检查是否对应的USB Key
+    proto::NameIndex usrindex;
+    {
+      int ec = ReadUserIndex(usrindex);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read user index"));
+        return;
+      }
+    }
+
+    // 提示是否更新USB Key中的用户
+
     // 检查name是否为空
-    QString name = ui->edit_name->text();
-    if (name.isEmpty()) {
-      MsgBox("Please input the user name.");
+    if (new_name.empty()) {
+      MsgBox(tr("Please input the user name."));
       return;
     }
 
     // 检查index.db是否存在，如果存在则读取
     proto::IndexInfo indexs;
-    bool index_db = false;
     {
-      std::fstream input("index.db", std::ios::in | std::ios::binary);
-      if (input) {
-        index_db = true;
-        if (!indexs.ParseFromIstream(&input)) {
-          MsgBox("index file exists, but failed to read");
-          return;
-        }
+      int ec;
+      ec = ReadLocalIndexs(indexs);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read local indexs"));
+        return;
       }
     }
 
@@ -437,12 +378,12 @@ MainWidget::MainWidget(QWidget *parent) :
     {
       bool dup_name = false;
       for (int i = 0; i < indexs.index_size(); ++i) {
-        if (name.toStdString() == indexs.index(i).name()) {
+        if (new_name == indexs.index(i).name()) {
           dup_name = true;
         }
       }
       if (dup_name) {
-        MsgBox("duplication of name");
+        MsgBox(tr("duplication of name"));
         return;
       }
     }
@@ -450,43 +391,28 @@ MainWidget::MainWidget(QWidget *parent) :
     // 重命名
     {
       bool found = false;
-      auto current_text = ui->comboBox->currentText().toStdString();
       for (int i = 0; i < indexs.index_size(); ++i) {
-        if (indexs.index(i).name() == current_text) {
-          indexs.mutable_index(i)->set_name(name.toStdString());
+        if (indexs.index(i).name() == usrindex.name()) {
+          indexs.mutable_index(i)->set_name(new_name);
           found = true;
         }
       }
       if (!found) {
-        MsgBox("Cannot find the name to delete");
+        MsgBox(tr("Cannot find the name to delete"));
         return;
       }
-    }
 
-    // 备份
-    {
-      if (index_db) {
-        fs::path old_path = fs::current_path().append("index.db");
-        std::time_t tmt = std::time(nullptr);
-        std::tm* stdtm = std::localtime(&tmt);
-        char mbstr[100];
-        std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
-        std::string smsbstr(mbstr);
-        std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
-        [](unsigned char c) -> unsigned char {
-          if (c == ':')
-            return '-';
-          return c;
-        });
-        fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
-        fs::rename(old_path, new_path);
+      usrindex.set_name(new_name);
+      int ec = WriteUserIndex(usrindex);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to write user information to USB Key"));
+        return;
       }
     }
 
     // 写回
     {
-      std::fstream output("index.db", std::ios::out | std::ios::trunc | std::ios::binary);
-      if (!indexs.SerializeToOstream(&output)) {
+      if (WriteLocalIndexs(indexs) != kSuccess) {
         MsgBox("Failed to write index.db");
         return;
       }
@@ -505,6 +431,8 @@ MainWidget::MainWidget(QWidget *parent) :
     std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
 
     // 检查index.db是否存在，如果存在则读取，不存在则提示错误
+
+    // index.db另存为
   });
 }
 
