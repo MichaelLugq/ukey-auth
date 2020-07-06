@@ -15,7 +15,10 @@ class MainWidget : public QWidget {
   ~MainWidget();
 
  private slots:
-  void OnCurrentChanged(int index);
+  void OnRefresh();
+
+ private:
+  void showEvent(QShowEvent* event) override;
 
  private:
   void UpdateComboBox();

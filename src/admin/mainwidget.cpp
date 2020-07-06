@@ -434,17 +434,33 @@ MainWidget::MainWidget(QWidget *parent) :
 
     // index.dbÁí´æÎª
   });
+
+  connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_add, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_delete, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnRefresh);
 }
 
 MainWidget::~MainWidget() {
   delete ui;
 }
 
-void MainWidget::OnCurrentChanged(int index) {
-  if (index == kPageGenerateIndex) {
-    //
-  } else if (index == kPageOperatorIndex) {
-    //
+void MainWidget::OnRefresh() {
+  proto::NameIndex index;
+  int ec = ReadUserIndex(index);
+  if (ec == kNoDevice) {
+    ui->label_user->setText(tr("No device"));
+  } else if (ec != kSuccess) {
+    ui->label_user->setText(tr("No user information"));
+  } else {
+    ui->label_user->setText(tr("The user is ") + QString::fromStdString(index.name()));
+  }
+}
+
+void MainWidget::showEvent(QShowEvent* event) {
+  auto index = ui->stackedWidget->currentIndex();
+  if (index == kPageOperatorIndex) {
+    OnRefresh();
   }
 }
 
