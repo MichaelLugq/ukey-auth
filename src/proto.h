@@ -25,3 +25,7 @@ int ReadLocalIndexs(proto::IndexInfo& local);
 int WriteSecrets(const std::vector<SM2KeyPair>& keys);
 
 int ReadSecrets(std::vector<SM2KeyPair>& keys);
+
+int WritePublicKeysToUKey(const std::vector<SM2KeyPair>& keys);
+
+int ReadPublicKeysFromUKey(std::vector<std::vector<BYTE>>& public_keys);

@@ -39,13 +39,13 @@ MainWidget::MainWidget(QWidget *parent) :
   ui->setupUi(this);
 
   this->setFixedSize(600, 450);
-  this->setWindowTitle("Administrator");
+  this->setWindowTitle(tr("Administrator"));
 
   ui->comboBox->setEditable(false);
 
   UpdateComboBox();
 
-  // ¼ì²éÃÜÔ¿¶ÔÎÄ¼şÊÇ·ñ´æÔÚ¡£´æÔÚ£ºÖ±½ÓÌø×ª£»²»´æÔÚ£º²»Ìø×ª
+  // æ£€æŸ¥å¯†é’¥å¯¹æ–‡ä»¶æ˜¯å¦å­˜åœ¨ã€‚å­˜åœ¨ï¼šç›´æ¥è·³è½¬ï¼›ä¸å­˜åœ¨ï¼šä¸è·³è½¬
   {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
@@ -53,10 +53,10 @@ MainWidget::MainWidget(QWidget *parent) :
   }
 
   connect(ui->btn_gen, &QPushButton::clicked, this, [&]() {
-    // ÖÃ»Ò£¬·ÀÖ¹ÖØ¸´µã»÷
+    // ç½®ç°ï¼Œé˜²æ­¢é‡å¤ç‚¹å‡»
     ui->btn_gen->setEnabled(false);
 
-    // Éú³ÉÃÜÔ¿¶Ô
+    // ç”Ÿæˆå¯†é’¥å¯¹
     int ec;
     std::vector<SM2KeyPair> keys;
     {
@@ -64,14 +64,14 @@ MainWidget::MainWidget(QWidget *parent) :
         SM2KeyPair keypair;
         ec = GenSM2KeyPair(keypair);
         if (0 != ec) {
-          MsgBox("Failed to generate key pair");
+          MsgBox(tr("Failed to generate key pair"));
           return;
         }
         keys.emplace_back(std::move(keypair));
       }
     }
 
-    // Ğ´ÈëÎÄ¼ş
+    // å†™å…¥æ–‡ä»¶
     if (WriteSecrets(keys) != kSuccess) {
       MsgBox(tr("Failed to generate key pairs."));
       return;
@@ -79,7 +79,7 @@ MainWidget::MainWidget(QWidget *parent) :
       ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
     }
 
-    // ¶ÁÈ¡ÎÄ¼ş
+    // è¯»å–æ–‡ä»¶
     std::vector<SM2KeyPair> copy_keys;
     if (ReadSecrets(copy_keys) != kSuccess) {
       MsgBox(tr("Failed to read key pairs."));
@@ -90,27 +90,28 @@ MainWidget::MainWidget(QWidget *parent) :
   });
 
   connect(ui->btn_add, &QPushButton::clicked, this, [&]() {
-    // ÖÃ»Ò
+    // ç½®ç°
     SetDisable(ui->btn_add);
 
-    // ¼ì²éÊÇ·ñ¿ÕµÄUSB Key£¬·Ç¿ÕÖ±½ÓÌáÊ¾²¢·µ»Ø
+    // æ£€æŸ¥nameæ˜¯å¦ä¸ºç©º
+    std::string name = ui->edit_name->text().toUtf8().data();
+    if (name.empty()) {
+      MsgBox(tr("Please input the user name."));
+      return;
+    }
+
+    // æ£€æŸ¥æ˜¯å¦ç©ºçš„USB Keyï¼Œéç©ºç›´æ¥æç¤ºå¹¶è¿”å›
     {
       proto::NameIndex usrindex;
       auto ec = ReadUserIndex(usrindex);
       if (ec != kNoWrittenFlag) {
+        // TODO: MsgBox(ec.msg());
         MsgBox(tr("Has been written"));
         return;
       }
     }
 
-    // ¼ì²énameÊÇ·ñÎª¿Õ
-    QString name = ui->edit_name->text();
-    if (name.isEmpty()) {
-      MsgBox(tr("Please input the user name."));
-      return;
-    }
-
-    // ¼ì²éindex.dbÊÇ·ñ´æÔÚ£¬Èç¹û´æÔÚÔò¶ÁÈ¡
+    // æ£€æŸ¥index.dbæ˜¯å¦å­˜åœ¨ï¼Œå¦‚æœå­˜åœ¨åˆ™è¯»å–
     proto::IndexInfo indexs;
     {
       int ec = ReadLocalIndexs(indexs);
@@ -121,11 +122,11 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ¼ì²énameÊÇ·ñÖØÃû
+    // æ£€æŸ¥nameæ˜¯å¦é‡å
     {
       bool dup_name = false;
       for (int i = 0; i < indexs.index_size(); ++i) {
-        if (name.toStdString() == indexs.index(i).name()) {
+        if (name == indexs.index(i).name()) {
           dup_name = true;
         }
       }
@@ -135,7 +136,7 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ¶ÁÈ¡ËùÓĞ¹«Ë½Ô¿£º´ÓÖĞ»ñÈ¡Ö¸¶¨Ë÷ÒıµÄÃÜÔ¿¶Ô¡¢ËùÓĞ¹«Ô¿
+    // è¯»å–æ‰€æœ‰å…¬ç§é’¥ï¼šä»ä¸­è·å–æŒ‡å®šç´¢å¼•çš„å¯†é’¥å¯¹ã€æ‰€æœ‰å…¬é’¥
     std::vector<SM2KeyPair> keys;
     {
       int ec = ReadSecrets(keys);
@@ -145,74 +146,65 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ÉèÖÃ¡¢ÑéÖ¤PIN
+    // è®¾ç½®ã€éªŒè¯PIN
     {
       std::vector<BYTE> password(6, '0');
       int ec = SetPIN(password);
       if (0 != ec) {
-        MsgBox("Failed to set PIN");
+        MsgBox(tr("Failed to set PIN"));
         return;
       }
       ec = VerifyPIN(password);
       if (0 != ec) {
-        MsgBox("Failed to verify PIN");
+        MsgBox(tr("Failed to verify PIN"));
         return;
       }
     }
 
-    // µ¼ÈëÖ¸¶¨Ë÷ÒıµÄÃÜÔ¿¶Ôµ½USB Key
+    // å¯¼å…¥æŒ‡å®šç´¢å¼•çš„å¯†é’¥å¯¹åˆ°USB Key
     int current_index = indexs.index_size();
     {
       if (current_index >= keys.size()) {
-        MsgBox("There is not enough key pairs");
+        MsgBox(tr("There is not enough key pairs"));
         return;
       }
       int ec = ImportKeyPairToUKey(keys[current_index]);
       if (ec != 0) {
-        MsgBox("Failed to import key pair");
+        MsgBox(tr("Failed to import key pair"));
         return;
       }
     }
 
-    // µ¼ÈëËùÓĞ¹«Ô¿
+    // å¯¼å…¥æ‰€æœ‰å…¬é’¥
     {
-      std::vector<BYTE> pubs;
-      for (auto& key : keys) {
-        pubs.insert(pubs.begin(), key.pub_key.begin(), key.pub_key.end());
-      }
-      assert(pubs.size() % 4096 == 0);
-
-      int sector_offset = kPublicKeyStartPosition;
-      int ec = WriteToUKey(sector_offset, pubs);
-      if (ec != 0) {
-        MsgBox("Failed to import public key to USB Key");
+      int ec = WritePublicKeysToUKey(keys);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to import public key to USB Key"));
         return;
       }
 
       // Test: read public keys
-      std::vector<BYTE> test_pub;
-      sector_offset = kPublicKeyStartPosition;
-      ULONG sector_read = kSM2KeyPairCount * 64 / 4096;
-      ec = ReadFromUKey(sector_offset, sector_read, test_pub);
-      if (ec != 0) {
-        MsgBox("Failed to read public key from USB Key");
+      std::vector <std::vector<BYTE>> test_pubs;
+      ec = ReadPublicKeysFromUKey(test_pubs);
+      if (ec != kSuccess) {
+        MsgBox(tr("Failed to read public key from USB Key"));
         return;
       }
     }
 
-    // ¸üĞÂindexs
+    // æ›´æ–°indexs
     {
       auto added = indexs.add_index();
-      added->set_name(name.toStdString());
+      added->set_name(name);
       added->set_index(current_index);
     }
 
-    // µ¼ÈëÉí·İĞÅÏ¢£¨name + index£©,¿É×÷ÎªÊÇ·ñÒÑ¾­ÏÂ·¢µÄ±ê¼Ç
+    // å¯¼å…¥èº«ä»½ä¿¡æ¯ï¼ˆname + indexï¼‰,å¯ä½œä¸ºæ˜¯å¦å·²ç»ä¸‹å‘çš„æ ‡è®°
     {
-      // ±¾µØÓÃ»§£¨Ğ´£©
+      // æœ¬åœ°ç”¨æˆ·ï¼ˆå†™ï¼‰
       {
         proto::NameIndex usrindex;
-        usrindex.set_name(name.toStdString());
+        usrindex.set_name(name);
         usrindex.set_index(current_index);
         int ec = WriteUserIndex(usrindex);
         if (ec != kSuccess) {
@@ -221,7 +213,7 @@ MainWidget::MainWidget(QWidget *parent) :
         }
       }
 
-      // ±¾µØÓÃ»§£¨¶Á£©
+      // æœ¬åœ°ç”¨æˆ·ï¼ˆè¯»ï¼‰
       {
         proto::NameIndex usrindex;
         int ec = ReadUserIndex(usrindex);
@@ -229,11 +221,11 @@ MainWidget::MainWidget(QWidget *parent) :
           MsgBox(tr("Failed to read user index"));
           return;
         }
-        assert(name.toStdString() == usrindex.name());
+        assert(name == usrindex.name());
         assert(current_index == usrindex.index());
       }
 
-      // ÆäËûÓÃ»§£¨Ğ´£©
+      // å…¶ä»–ç”¨æˆ·ï¼ˆå†™ï¼‰
       {
         int ec = WriteOthersIndex(indexs);
         if (ec != 0) {
@@ -242,7 +234,7 @@ MainWidget::MainWidget(QWidget *parent) :
         }
       }
 
-      // ÆäËûÓÃ»§£¨¶Á£©
+      // å…¶ä»–ç”¨æˆ·ï¼ˆè¯»ï¼‰
       {
         proto::IndexInfo infos;
         if (ReadOthersIndex(infos) != kSuccess) {
@@ -254,26 +246,26 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // Ğ´Èëindex.db
+    // å†™å…¥index.db
     {
       if (WriteLocalIndexs(indexs) != kSuccess) {
-        MsgBox("Failed to write index.db");
+        MsgBox(tr("Failed to write index.db"));
         return;
       }
     }
 
-    // ÖØĞÂ¼ÓÔØ
+    // é‡æ–°åŠ è½½
     UpdateComboBox();
 
     //
-    MsgBox("Success");
+    MsgBox(tr("Success"));
   });
 
   connect(ui->btn_delete, &QPushButton::clicked, this, [&]() {
-    // ÖÃ»Ò
+    // ç½®ç°
     SetDisable(ui->btn_delete);
 
-    // ¼ì²éÊÇ·ñ¶ÔÓ¦µÄUSB Key
+    // æ£€æŸ¥æ˜¯å¦å¯¹åº”çš„USB Key
     std::string name;
     proto::NameIndex usrindex;
     {
@@ -285,20 +277,20 @@ MainWidget::MainWidget(QWidget *parent) :
       name = usrindex.name();
     }
 
-    // TODO£ºÌáÊ¾ÊÇ·ñÉ¾³ıUSB KeyÖĞµÄÓÃ»§
+    // TODOï¼šæç¤ºæ˜¯å¦åˆ é™¤USB Keyä¸­çš„ç”¨æˆ·
 
-    // É¾³ı: É¾³ıÓÃ»§¡¢Çå¿Õ¹«Ô¿¡¢Çå¿Õ×ÔÉí¹«Ë½Ô¿
+    // åˆ é™¤: åˆ é™¤ç”¨æˆ·ã€æ¸…ç©ºå…¬é’¥ã€æ¸…ç©ºè‡ªèº«å…¬ç§é’¥
     {
       int ec = ClearUserIndex();
       if (ec != kSuccess) {
         MsgBox(tr("Failed to clear user index"));
         return;
       }
-      // TODO: Çå¿Õ¹«Ô¿
-      // TODO: Çå¿Õ×ÔÉí¹«Ë½Ô¿
+      // TODO: æ¸…ç©ºå…¬é’¥
+      // TODO: æ¸…ç©ºè‡ªèº«å…¬ç§é’¥
     }
 
-    // ¶ÁÈ¡index.db
+    // è¯»å–index.db
     proto::IndexInfo indexs;
     {
       int ec;
@@ -309,7 +301,7 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ´Óindex.dbÖĞÉ¾³ı´ËÌõ¼ÇÂ¼
+    // ä»index.dbä¸­åˆ é™¤æ­¤æ¡è®°å½•
     {
       bool found = false;
       for (auto it = indexs.mutable_index()->begin(); it != indexs.mutable_index()->end(); ++it) {
@@ -325,7 +317,7 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // Ğ´»Ø
+    // å†™å›
     {
       if (WriteLocalIndexs(indexs) != kSuccess) {
         MsgBox("Failed to write index.db");
@@ -333,19 +325,19 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ÖØĞÂ¼ÓÔØ
+    // é‡æ–°åŠ è½½
     UpdateComboBox();
 
-    MsgBox("Success");
+    MsgBox(tr("Success"));
   });
 
   connect(ui->btn_update, &QPushButton::clicked, this, [&]() {
-    // ÖÃ»Ò
+    // ç½®ç°
     SetDisable(ui->btn_update);
 
-    std::string new_name = ui->edit_name->text().toStdString();
+    std::string new_name = ui->edit_name->text().toUtf8().data();
 
-    // ¼ì²éÊÇ·ñ¶ÔÓ¦µÄUSB Key
+    // æ£€æŸ¥æ˜¯å¦å¯¹åº”çš„USB Key
     proto::NameIndex usrindex;
     {
       int ec = ReadUserIndex(usrindex);
@@ -355,15 +347,15 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ÌáÊ¾ÊÇ·ñ¸üĞÂUSB KeyÖĞµÄÓÃ»§
+    // æç¤ºæ˜¯å¦æ›´æ–°USB Keyä¸­çš„ç”¨æˆ·
 
-    // ¼ì²énameÊÇ·ñÎª¿Õ
+    // æ£€æŸ¥nameæ˜¯å¦ä¸ºç©º
     if (new_name.empty()) {
       MsgBox(tr("Please input the user name."));
       return;
     }
 
-    // ¼ì²éindex.dbÊÇ·ñ´æÔÚ£¬Èç¹û´æÔÚÔò¶ÁÈ¡
+    // æ£€æŸ¥index.dbæ˜¯å¦å­˜åœ¨ï¼Œå¦‚æœå­˜åœ¨åˆ™è¯»å–
     proto::IndexInfo indexs;
     {
       int ec;
@@ -374,7 +366,7 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ¼ì²énameÊÇ·ñÖØÃû
+    // æ£€æŸ¥nameæ˜¯å¦é‡å
     {
       bool dup_name = false;
       for (int i = 0; i < indexs.index_size(); ++i) {
@@ -388,7 +380,7 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // ÖØÃüÃû
+    // é‡å‘½å
     {
       bool found = false;
       for (int i = 0; i < indexs.index_size(); ++i) {
@@ -410,34 +402,37 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
-    // Ğ´»Ø
+    // å†™å›
     {
       if (WriteLocalIndexs(indexs) != kSuccess) {
-        MsgBox("Failed to write index.db");
+        MsgBox(tr("Failed to write index.db"));
         return;
       }
     }
 
-    // ÖØĞÂ¼ÓÔØ
+    // é‡æ–°åŠ è½½
     UpdateComboBox();
 
-    MsgBox("Success");
+    MsgBox(tr("Success"));
   });
 
   connect(ui->btn_download, &QPushButton::clicked, this, [&]() {
-    // ÖÃ»Ò
+    // ç½®ç°
     ui->btn_download->setEnabled(false);
     auto set_enabled = [&](BYTE*) { ui->btn_download->setEnabled(true); };
     std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
 
-    // ¼ì²éindex.dbÊÇ·ñ´æÔÚ£¬Èç¹û´æÔÚÔò¶ÁÈ¡£¬²»´æÔÚÔòÌáÊ¾´íÎó
+    // æ£€æŸ¥index.dbæ˜¯å¦å­˜åœ¨ï¼Œå¦‚æœå­˜åœ¨åˆ™è¯»å–ï¼Œä¸å­˜åœ¨åˆ™æç¤ºé”™è¯¯
 
-    // index.dbÁí´æÎª
+    // index.dbå¦å­˜ä¸º
   });
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+
   connect(ui->btn_add, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+
   connect(ui->btn_delete, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnRefresh);
 }
 
@@ -450,10 +445,19 @@ void MainWidget::OnRefresh() {
   int ec = ReadUserIndex(index);
   if (ec == kNoDevice) {
     ui->label_user->setText(tr("No device"));
-  } else if (ec != kSuccess) {
+  } else if (ec == kTooManyDevice) {
+    ui->label_user->setText(tr("Too many devices"));
+  } else if (ec == kNoWrittenFlag) {
     ui->label_user->setText(tr("No user information"));
-  } else {
+  } else if (ec == kSuccess) {
     ui->label_user->setText(tr("The user is ") + QString::fromStdString(index.name()));
+    // è®¾ç½®ç®¡ç†å‘˜æƒé™
+    auto ec = SetAdminPIN(std::vector<BYTE>(6, '0'));
+    if (ec != kSuccess) {
+      MsgBox(tr("Failed to set administrator's PIN"));
+    }
+  } else {
+    ui->label_user->setText(tr("Unknown error"));
   }
 }
 
@@ -465,7 +469,7 @@ void MainWidget::showEvent(QShowEvent* event) {
 }
 
 void MainWidget::UpdateComboBox() {
-  // ¼ì²éindex.dbÊÇ·ñ´æÔÚ£¬Èç¹û´æÔÚÔò¶ÁÈ¡£¬²¢ÏÔÊ¾ÔÚcomboBox¿Ø¼ş
+  // æ£€æŸ¥index.dbæ˜¯å¦å­˜åœ¨ï¼Œå¦‚æœå­˜åœ¨åˆ™è¯»å–ï¼Œå¹¶æ˜¾ç¤ºåœ¨comboBoxæ§ä»¶
   proto::IndexInfo indexs;
   {
     std::fstream input("index.db", std::ios::in | std::ios::binary);
@@ -477,7 +481,7 @@ void MainWidget::UpdateComboBox() {
     }
   }
 
-  // ´Óindex.db¶ÁÈ¡ĞÅÏ¢µ½comboBox
+  // ä»index.dbè¯»å–ä¿¡æ¯åˆ°comboBox
   {
     ui->comboBox->clear();
     QStringList list;

@@ -26,11 +26,17 @@ static const int kSM2PublicKeySize = 64;
 // SM2的私钥长度
 static const int kSM2PrivateKeySize = 32;
 
+// SM2加密后的比原文增加的长度
+static const int kSM2EncIncreaseLen = 96;
+
 // 生成的密钥对总个数
 static const int kSM2KeyPairCount = 1024;
 
 // 用户区大小
 static const int kUserRegionSize = 512;
+
+// SM4密钥长度
+static const int kSM4KeySize = 16;
 
 // 公钥的存储起始位置
 //

@@ -18,15 +18,39 @@ int main() {
     return ec;
   }
 
-  std::vector<BYTE> pin(6, '0');
-  ec = SetPIN(pin);
-  if (0 != ec) {
-    return ec;
-  }
+  {
+    std::vector<BYTE> pin(6, '0');
+    ec = SetPIN(pin);
+    if (0 != ec) {
+      return ec;
+    }
 
-  ec = VerifyPIN(pin);
-  if (0 != ec) {
-    return ec;
+    ec = VerifyPIN(pin);
+    if (0 != ec) {
+      return ec;
+    }
+
+    std::vector<BYTE> new_pin(6, '2');
+    ec = ChangePIN(pin, new_pin);
+    if (0 != ec) {
+      return ec;
+    }
+
+    ec = VerifyPIN(new_pin);
+    if (0 != ec) {
+      return ec;
+    }
+
+    std::vector<BYTE> admin_pin(6, '1');
+    ec = SetAdminPIN(admin_pin);
+    if (0 != ec) {
+      return ec;
+    }
+
+    ec = VerifyAdminPIN(admin_pin);
+    if (0 != ec) {
+      return ec;
+    }
   }
 
   ec = ImportKeyPairToUKey(skp);
@@ -34,9 +58,15 @@ int main() {
     return ec;
   }
 
+  std::vector<BYTE> public_key;
+  ec = GetPublicKey(public_key);
+  if (0 != ec) {
+    return ec;
+  }
+
   std::vector<BYTE> data(36, 0);
   std::vector<BYTE> enc;
-  ec = SM2Encrypt(data, enc);
+  ec = SM2Encrypt(public_key, data, enc);
   if (0 != ec) {
     return ec;
   }

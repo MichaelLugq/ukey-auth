@@ -59,7 +59,7 @@ int ReadUserIndex(proto::NameIndex& name_index) {
   std::istringstream input;
   input.str(str);
   if (!name_index.ParseFromIstream(&input)) {
-    return -1;
+    return kErrParseProto;
   }
 
   return kSuccess;
@@ -129,18 +129,7 @@ int WriteLocalIndexs(const proto::IndexInfo& local) {
   // ±¸·Ý
   if (LocalIndexExists()) {
     fs::path old_path = fs::current_path().append("index.db");
-    std::time_t tmt = std::time(nullptr);
-    std::tm* stdtm = std::localtime(&tmt);
-    char mbstr[100];
-    std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
-    std::string smsbstr(mbstr);
-    std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
-    [](unsigned char c) -> unsigned char {
-      if (c == ':')
-        return '-';
-      return c;
-    });
-    fs::path new_path = fs::current_path().append("index-" + smsbstr + ".db");
+    fs::path new_path = fs::current_path().append("index-" + TimeString() + ".db");
     std::error_code ec;
     fs::rename(old_path, new_path, ec);
     if (ec) {
@@ -207,6 +196,44 @@ int ReadSecrets(std::vector<SM2KeyPair>& keys) {
     key.pub_key.assign(secrets.keypair(i).pub_key().begin(), secrets.keypair(i).pub_key().end());
     key.priv_key.assign(secrets.keypair(i).priv_key().begin(), secrets.keypair(i).priv_key().end());
     keys.emplace_back(std::move(key));
+  }
+
+  return kSuccess;
+}
+
+int WritePublicKeysToUKey(const std::vector<SM2KeyPair>& keys) {
+  std::vector<BYTE> pubs;
+
+  for (const auto& key : keys) {
+    pubs.insert(pubs.end(), key.pub_key.begin(), key.pub_key.end());
+  }
+  assert(pubs.size() % 4096 == 0);
+
+  int sector_offset = kPublicKeyStartPosition;
+  int ec = WriteToUKey(sector_offset, pubs);
+  if (ec != kSuccess) {
+    return ec;
+  }
+
+  return kSuccess;
+}
+
+int ReadPublicKeysFromUKey(std::vector<std::vector<BYTE>>& public_keys) {
+  std::vector<BYTE> test_pub;
+
+  auto sector_offset = kPublicKeyStartPosition;
+  ULONG sector_read = kSM2KeyPairCount * kSM2PublicKeySize / 4096;
+  auto ec = ReadFromUKey(sector_offset, sector_read, test_pub);
+  if (ec != kSuccess) {
+    return ec;
+  }
+
+  assert(test_pub.size() % kSM2PublicKeySize == 0);
+  int pubkey_count = test_pub.size() / kSM2PublicKeySize;
+  for (int i = 0; i < pubkey_count; ++i) {
+    std::vector<BYTE> one(test_pub.begin() + i * kSM2PublicKeySize,
+                          test_pub.begin() + (i + 1) * kSM2PublicKeySize);
+    public_keys.emplace_back(std::move(one));
   }
 
   return kSuccess;

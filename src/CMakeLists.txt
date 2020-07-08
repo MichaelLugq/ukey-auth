@@ -82,19 +82,27 @@ add_custom_command(TARGET admin POST_BUILD
 )
 
 # user
-add_executable(user
+add_executable(user WIN32
   utils.cpp
   crypto.cpp
+  proto.cpp
   user/main.cpp
+  user/mainwidget.cpp
+  user/mainwidget.h
+  user/mainwidget.ui
   ${secret_PROTO_SRCS}
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
 )
+target_include_directories(user PUBLIC 
+  ${PROTOBUF_INCLUDE_DIRS}
+)
 target_link_libraries(user PUBLIC
   OpenSSL::Crypto
   OpenSSL::SSL
   protobuf::libprotobuf
+  Qt5::Widgets
   u03ukey
 )
 

@@ -1,5 +1,6 @@
 #include "utils.h"
 #include <algorithm>
+#include <ctime>
 
 const std::string& kLSSDFlag = "lssd";
 
@@ -45,4 +46,19 @@ int GetLSSDDevice(const std::vector<std::string>& devs, std::vector<std::string>
     }
   }
   return lssd_devs.size();
+}
+
+std::string TimeString() {
+  std::time_t tmt = std::time(nullptr);
+  std::tm* stdtm = std::localtime(&tmt);
+  char mbstr[100];
+  std::strftime(mbstr, sizeof(mbstr), "%F %T", stdtm);
+  std::string smsbstr(mbstr);
+  std::transform(smsbstr.begin(), smsbstr.end(), smsbstr.begin(),
+  [](unsigned char c) -> unsigned char {
+    if (c == ':')
+      return '-';
+    return c;
+  });
+  return smsbstr;
 }

@@ -14,6 +14,9 @@
 
 #include <vector>
 #include <sstream>
+#include <cassert>
+
+static const unsigned char *iv = (unsigned char *)"0123456789012345";
 
 #pragma region InitOpenssl
 
@@ -154,7 +157,7 @@ int SetPIN(const std::vector<BYTE>& pin) {
     return ec;
   }
 
-  return 0;
+  return kSuccess;
 }
 
 int VerifyPIN(const std::vector<BYTE>& pin) {
@@ -162,6 +165,45 @@ int VerifyPIN(const std::vector<BYTE>& pin) {
 
   ULONG retry_count = 0;
   ec = LS_VerifyPIN(handle, (BYTE*)&pin[0], pin.size(), &retry_count);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return kSuccess;
+}
+
+int ChangePIN(const std::vector<BYTE>& old_pin, const std::vector<BYTE>& new_pin) {
+  GetHandle();
+
+  ULONG retry_count = 0;
+  ULONG max_retry_count = 8;
+  ec = LS_ChangePIN(handle, (BYTE*)&old_pin[0], old_pin.size(),
+                    (BYTE*)&new_pin[0], new_pin.size(),
+                    max_retry_count, &retry_count);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return kSuccess;
+}
+
+int SetAdminPIN(const std::vector<BYTE>& pin) {
+  GetHandle();
+
+  ULONG max_retry_count = 8;
+  ec = LS_SetAdminPin(handle, (BYTE*)&pin[0], pin.size(), max_retry_count);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+
+  return 0;
+}
+
+int VerifyAdminPIN(const std::vector<BYTE>& pin) {
+  GetHandle();
+
+  ULONG retry_count = 0;
+  ec = LS_VerifyAdminPIN(handle, (BYTE*)&pin[0], pin.size(), &retry_count);
   if (ec != LS_SUCCESS) {
     return ec;
   }
@@ -234,13 +276,45 @@ int ReadPrivate(int offset, int bytes, std::vector<BYTE>& data) {
   return kSuccess;
 }
 
+int GetPublicKey(std::vector<BYTE>& pubkey) {
+  GetHandle();
+  pubkey.resize(kSM2PublicKeySize);
+  ULONG len = 100;
+  ec = LS_ExportPublicKey(handle, pubkey.data(), &len);
+  if (ec != LS_SUCCESS) {
+    return ec;
+  }
+  assert(len == kSM2PublicKeySize);
+  return kSuccess;
+}
+
 int SM2Encrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out) {
   GetHandle();
 
   out.clear();
-  ULONG outlen = in.size() + 100;
+  ULONG outlen = in.size() + kSM2EncIncreaseLen;
   out.resize(outlen);
   ec = LS_AsymEncrypt(handle, (BYTE*)in.data(), in.size(), out.data(), &outlen);
+  if (ec != LS_SUCCESS) {
+    out.resize(0);
+    return ec;
+  }
+  out.resize(outlen);
+
+  return 0;
+}
+
+int SM2Encrypt(const std::vector<BYTE>& pubkey,
+               const std::vector<BYTE>& in,
+               std::vector<BYTE>& out
+              ) {
+  GetHandle();
+
+  out.clear();
+  ULONG outlen = in.size() + kSM2EncIncreaseLen;
+  out.resize(outlen);
+  ec = LS_AsymEncryptUseImportedKey(handle, (BYTE*)pubkey.data(), pubkey.size(),
+                                    (BYTE*)in.data(), in.size(), out.data(), &outlen);
   if (ec != LS_SUCCESS) {
     out.resize(0);
     return ec;
@@ -266,7 +340,11 @@ int SM2Decrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out) {
   return 0;
 }
 
-int SM4Encrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+int UKeySM4Encrypt(
+  const std::vector<BYTE>& key,
+  const std::vector<BYTE>& in,
+  std::vector<BYTE>& out
+) {
   GetHandle();
 
   LS_SymmCipherParam param;
@@ -292,7 +370,11 @@ int SM4Encrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::v
   return 0;
 }
 
-int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+int UKeySM4Decrypt(
+  const std::vector<BYTE>& key,
+  const std::vector<BYTE>& in,
+  std::vector<BYTE>& out
+) {
   GetHandle();
 
   LS_SymmCipherParam param;
@@ -316,6 +398,30 @@ int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::v
   out.resize(outlen);
 
   return 0;
+}
+
+int OpenSSLSM4Encrypt(
+  const std::vector<BYTE>& key,
+  const std::vector<BYTE>& in,
+  std::vector<BYTE>& out
+) {
+  return kSuccess;
+}
+
+int OpenSSLSM4Decrypt(
+  const std::vector<BYTE>& key,
+  const std::vector<BYTE>& in,
+  std::vector<BYTE>& out
+) {
+  return kSuccess;
+}
+
+int SM4Encrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  return UKeySM4Encrypt(key, in, out);
+}
+
+int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out) {
+  return UKeySM4Decrypt(key, in, out);
 }
 
 #pragma endregion U03Key

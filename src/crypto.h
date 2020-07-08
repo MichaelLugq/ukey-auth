@@ -25,11 +25,22 @@ int GenRandom(std::vector<BYTE>& random, int num);
 
 #pragma endregion OpenSSL
 
+#pragma region U03
+
 // 设置PIN码（仅管理员可用）
 int SetPIN(const std::vector<BYTE>& pin);
 
 // 验证PIN码（都可用）
 int VerifyPIN(const std::vector<BYTE>& pin);
+
+// 验证PIN码（都可用）
+int ChangePIN(const std::vector<BYTE>& old_pin, const std::vector<BYTE>& new_pin);
+
+// 设置管理员PIN码（仅管理员可用）
+int SetAdminPIN(const std::vector<BYTE>& pin);
+
+// 验证管理员PIN码（仅管理员可用）
+int VerifyAdminPIN(const std::vector<BYTE>& pin);
 
 // 导入密钥对（仅管理员可用）
 int ImportKeyPairToUKey(const SM2KeyPair& keypair);
@@ -46,8 +57,16 @@ int WritePrivate(int offset, const std::vector<BYTE>& data);
 // 读私有区
 int ReadPrivate(int offset, int bytes, std::vector<BYTE>& data);
 
+// 获取公钥
+int GetPublicKey(std::vector<BYTE>& pubkey);
+
 // SM2加密
 int SM2Encrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out);
+
+// SM2加密(外部公钥)
+int SM2Encrypt(const std::vector<BYTE>& pubkey,
+               const std::vector<BYTE>& in,
+               std::vector<BYTE>& out);
 
 // SM2解密
 int SM2Decrypt(const std::vector<BYTE>& in, std::vector<BYTE>& out);
@@ -57,3 +76,5 @@ int SM4Encrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::v
 
 // SM4解密
 int SM4Decrypt(const std::vector<BYTE>& key, const std::vector<BYTE>& in, std::vector<BYTE>& out);
+
+#pragma endregion U03
