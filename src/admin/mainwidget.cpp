@@ -19,8 +19,9 @@
 
 namespace fs = std::filesystem;
 
-static const int kPageGenerateIndex = 0;
-static const int kPageOperatorIndex = 1;
+static const int kPagePINIndex = 0;
+static const int kPageGenerateIndex = 1;
+static const int kPageOperatorIndex = 2;
 
 #define SetDisable(btn)                                          \
   btn->setEnabled(false);                                        \
@@ -43,14 +44,9 @@ MainWidget::MainWidget(QWidget *parent) :
 
   ui->comboBox->setEditable(false);
 
-  UpdateComboBox();
+  ui->stackedWidget->setCurrentIndex(kPagePINIndex);
 
-  // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
-  {
-    std::fstream input("secret.db", std::ios::in | std::ios::binary);
-    ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
-    ui->btn_gen->setEnabled(!input);
-  }
+  UpdateComboBox();
 
   connect(ui->btn_gen, &QPushButton::clicked, this, [&]() {
     // 置灰，防止重复点击
@@ -434,6 +430,12 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_delete, &QPushButton::clicked, this, &MainWidget::OnRefresh);
 
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+
+  connect(ui->btn_set_pin, &QPushButton::clicked, this, &MainWidget::OnBtnSetPIN);
+
+  connect(ui->btn_verify_pin, &QPushButton::clicked, this, &MainWidget::OnBtnVerifyPIN);
+
+  connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
 }
 
 MainWidget::~MainWidget() {
@@ -458,6 +460,30 @@ void MainWidget::OnRefresh() {
     }
   } else {
     ui->label_user->setText(tr("Unknown error"));
+  }
+}
+
+void MainWidget::OnBtnSetPIN() {
+
+}
+
+void MainWidget::OnBtnVerifyPIN() {
+
+  // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
+  {
+    std::fstream input("secret.db", std::ios::in | std::ios::binary);
+    ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
+    ui->btn_gen->setEnabled(!input);
+  }
+}
+
+void MainWidget::OnBtnChangePIN() {
+
+  // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
+  {
+    std::fstream input("secret.db", std::ios::in | std::ios::binary);
+    ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
+    ui->btn_gen->setEnabled(!input);
   }
 }
 

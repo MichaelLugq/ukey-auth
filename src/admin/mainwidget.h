@@ -16,6 +16,9 @@ class MainWidget : public QWidget {
 
  private slots:
   void OnRefresh();
+  void OnBtnSetPIN();
+  void OnBtnVerifyPIN();
+  void OnBtnChangePIN();
 
  private:
   void showEvent(QShowEvent* event) override;
