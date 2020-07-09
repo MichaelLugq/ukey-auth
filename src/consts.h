@@ -38,6 +38,9 @@ static const int kUserRegionSize = 512;
 // SM4密钥长度
 static const int kSM4KeySize = 16;
 
+// MD5长度
+static const int kMD5Size = 16;
+
 // 公钥的存储起始位置
 //
 // 4K Byte为单位,

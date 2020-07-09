@@ -23,6 +23,9 @@ int GenSM2KeyPair(SM2KeyPair& keypair);
 // Ëæ»úÊý
 int GenRandom(std::vector<BYTE>& random, int num);
 
+// Hash
+int CalcMD5(const std::vector<BYTE>& in, std::vector<BYTE>& out);
+
 #pragma endregion OpenSSL
 
 #pragma region U03

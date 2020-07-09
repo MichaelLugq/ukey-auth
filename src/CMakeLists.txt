@@ -5,8 +5,15 @@ add_executable(utils_test
 )
 
 add_executable(local_auth_test
-  local_auth_test.cpp
+  utils.cpp
+  crypto.cpp
   local_auth.cpp
+  local_auth_test.cpp
+)
+target_link_libraries(local_auth_test PUBLIC
+  OpenSSL::Crypto
+  OpenSSL::SSL
+  u03ukey
 )
 
 add_executable(crypto_test

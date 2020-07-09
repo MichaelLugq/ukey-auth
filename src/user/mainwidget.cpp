@@ -73,14 +73,12 @@ MainWidget::MainWidget(QWidget *parent) :
 
   ui->stackedWidget->setCurrentIndex(kPagePINIndex);
 
-  UpdateSenderLabel();
-  UpdateComboBox();
-
   connect(ui->btn_brower, &QPushButton::clicked, this, &MainWidget::OnBtnBrower);
   connect(ui->btn_encrypt, &QPushButton::clicked, this, &MainWidget::OnBtnEncrypt);
   connect(ui->btn_decrypt, &QPushButton::clicked, this, &MainWidget::OnBtnDecrypt);
   connect(ui->btn_verify_pin, &QPushButton::clicked, this, &MainWidget::OnBtnVerifyPIN);
   connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
+  connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateIndex);
 }
 
 MainWidget::~MainWidget() {
@@ -394,6 +392,9 @@ void MainWidget::OnBtnVerifyPIN() {
     MsgBox(tr("Failed to verify PIN"));
     return;
   }
+
+  UpdateSenderLabel();
+  UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
 }
 
@@ -417,7 +418,32 @@ void MainWidget::OnBtnChangePIN() {
     return;
   }
 
+  UpdateSenderLabel();
+  UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
+}
+
+void MainWidget::OnBtnUpdateIndex() {
+  {
+    std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
+    std::ifstream input(path, std::ios::in | std::ios::binary);
+    if (!input) {
+      MsgBox(tr("Failed to read file"));
+      return;
+    }
+    proto::IndexInfo indexs;
+    if (!indexs.ParseFromIstream(&input)) {
+      MsgBox(tr("Failed to parse file"));
+      return;
+    }
+    // 写入USB Key
+    auto ec = WriteOthersIndex(indexs);
+    if (ec != kSuccess) {
+      MsgBox(tr("Failed to write information to USB Key"));
+      return;
+    }
+  }
+  UpdateComboBox();
 }
 
 void MainWidget::UpdateSenderLabel() {
@@ -436,12 +462,10 @@ void MainWidget::UpdateComboBox() {
   // 检查index.db是否存在，如果存在则读取，并显示在comboBox控件
   proto::IndexInfo indexs;
   {
-    std::fstream input("index.db", std::ios::in | std::ios::binary);
-    if (input) {
-      if (!indexs.ParseFromIstream(&input)) {
-        MsgBox(tr("index file exists, but failed to read"));
-        return;
-      }
+    auto ec = ReadOthersIndex(indexs);
+    if (ec != kSuccess) {
+      MsgBox(tr("Failed to read other user's information from USB Key"));
+      return;
     }
   }
 

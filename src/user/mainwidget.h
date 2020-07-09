@@ -20,6 +20,7 @@ class MainWidget : public QWidget {
   void OnBtnDecrypt();
   void OnBtnVerifyPIN();
   void OnBtnChangePIN();
+  void OnBtnUpdateIndex();
 
  private:
   void UpdateSenderLabel();

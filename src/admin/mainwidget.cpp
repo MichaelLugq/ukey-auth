@@ -417,9 +417,7 @@ MainWidget::MainWidget(QWidget *parent) :
 
   connect(ui->btn_download, &QPushButton::clicked, this, [&]() {
     // 置灰
-    ui->btn_download->setEnabled(false);
-    auto set_enabled = [&](BYTE*) { ui->btn_download->setEnabled(true); };
-    std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
+    SetDisable(ui->btn_download);
 
     // 检查index.db是否存在，如果存在则读取，不存在则提示错误
 

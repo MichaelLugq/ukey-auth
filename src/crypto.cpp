@@ -100,6 +100,31 @@ int GenRandom(std::vector<BYTE>& random, int num) {
   return 0;
 }
 
+int CalcMD5(const std::vector<BYTE>& message, std::vector<BYTE>& digest) {
+  EVP_MD_CTX *mdctx;
+
+  if ((mdctx = EVP_MD_CTX_new()) == NULL)
+    return -1;
+
+  auto lm = [](EVP_MD_CTX* ctx) {
+    EVP_MD_CTX_free(ctx);
+  };
+  std::unique_ptr<EVP_MD_CTX, decltype(lm)> ctx_ptr(mdctx, lm);
+
+  if (1 != EVP_DigestInit_ex(mdctx, EVP_md5(), NULL))
+    return -1;
+
+  if (1 != EVP_DigestUpdate(mdctx, message.data(), message.size()))
+    return -1;
+
+  unsigned int digest_len = EVP_MD_size(EVP_md5());
+  digest.resize(digest_len);
+  if (1 != EVP_DigestFinal_ex(mdctx, digest.data(), &digest_len))
+    return -1;
+
+  return kSuccess;
+}
+
 #pragma endregion OpenSSL
 
 #pragma region U03Key

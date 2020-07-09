@@ -1,5 +1,5 @@
 #include "crypto.h"
-
+#include "consts.h"
 #include <cassert>
 
 int main() {
@@ -8,99 +8,72 @@ int main() {
 
   SM2KeyPair skp;
   ec = GenSM2KeyPair(skp);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   std::vector<BYTE> random;
   ec = GenRandom(random, 16);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
+
+  std::vector<BYTE> message(1000, 'y');
+  std::vector<BYTE> digest;
+  ec = CalcMD5(message, digest);
+  assert(ec == kSuccess);
 
   {
     std::vector<BYTE> pin(6, '0');
     ec = SetPIN(pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
 
     ec = VerifyPIN(pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
 
     std::vector<BYTE> new_pin(6, '2');
     ec = ChangePIN(pin, new_pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
 
     ec = VerifyPIN(new_pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
 
     std::vector<BYTE> admin_pin(6, '1');
     ec = SetAdminPIN(admin_pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
 
     ec = VerifyAdminPIN(admin_pin);
-    if (0 != ec) {
-      return ec;
-    }
+    assert(ec == kSuccess);
   }
 
   ec = ImportKeyPairToUKey(skp);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   std::vector<BYTE> public_key;
   ec = GetPublicKey(public_key);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   std::vector<BYTE> data(36, 0);
   std::vector<BYTE> enc;
   ec = SM2Encrypt(public_key, data, enc);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   std::vector<BYTE> plain;
   ec = SM2Decrypt(enc, plain);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
   assert(data == plain);
 
   std::vector<BYTE> key(16, 0);
   ec = SM4Encrypt(key, data, enc);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   ec = SM4Decrypt(key, enc, plain);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
   assert(data == plain);
 
   std::vector<BYTE> priv_data(512, 'A');
   ec = WritePrivate(0, priv_data);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
 
   std::vector<BYTE> priv_data_copy;
   ec = ReadPrivate(0, 512, priv_data_copy);
-  if (0 != ec) {
-    return ec;
-  }
+  assert(ec == kSuccess);
   assert(priv_data == priv_data_copy);
 
   return 0;
