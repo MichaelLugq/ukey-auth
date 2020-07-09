@@ -2,6 +2,9 @@
 #define MAINWIDGET_H
 
 #include <QWidget>
+#include <memory>
+
+class LocalAuth;
 
 namespace Ui {
 class MainWidget;
@@ -15,7 +18,7 @@ class MainWidget : public QWidget {
   ~MainWidget();
 
  private slots:
-  void OnRefresh();
+  void OnMainPageRefresh();
   void OnBtnSetPIN();
   void OnBtnVerifyPIN();
   void OnBtnChangePIN();
@@ -25,6 +28,10 @@ class MainWidget : public QWidget {
 
  private:
   void UpdateComboBox();
+  void UpdatePinPage();
+
+ private:
+  std::unique_ptr<LocalAuth> local_auth_;
 
  private:
   Ui::MainWidget *ui;

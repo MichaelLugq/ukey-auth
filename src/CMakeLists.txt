@@ -4,6 +4,11 @@ add_executable(utils_test
   utils_test.cpp
 )
 
+add_executable(local_auth_test
+  local_auth_test.cpp
+  local_auth.cpp
+)
+
 add_executable(crypto_test
   utils.cpp
   crypto.cpp
@@ -54,6 +59,7 @@ add_executable(admin WIN32
   utils.cpp
   crypto.cpp
   proto.cpp
+  local_auth.cpp
   admin/main.cpp
   admin/mainwidget.cpp
   admin/mainwidget.h

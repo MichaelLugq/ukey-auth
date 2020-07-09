@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "crypto.h"
 #include "proto.h"
+#include "local_auth.h"
 
 #include "secret.pb.h"
 #include "index.pb.h"
@@ -36,7 +37,8 @@ void MsgBox(const QString& msg) {
 
 MainWidget::MainWidget(QWidget *parent) :
   QWidget(parent),
-  ui(new Ui::MainWidget) {
+  ui(new Ui::MainWidget),
+  local_auth_(new LocalAuth()) {
   ui->setupUi(this);
 
   this->setFixedSize(600, 450);
@@ -46,6 +48,7 @@ MainWidget::MainWidget(QWidget *parent) :
 
   ui->stackedWidget->setCurrentIndex(kPagePINIndex);
 
+  UpdatePinPage();
   UpdateComboBox();
 
   connect(ui->btn_gen, &QPushButton::clicked, this, [&]() {
@@ -423,13 +426,13 @@ MainWidget::MainWidget(QWidget *parent) :
     // index.db另存为
   });
 
-  connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
 
-  connect(ui->btn_add, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_add, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
 
-  connect(ui->btn_delete, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_delete, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
 
-  connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnRefresh);
+  connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
 
   connect(ui->btn_set_pin, &QPushButton::clicked, this, &MainWidget::OnBtnSetPIN);
 
@@ -442,7 +445,7 @@ MainWidget::~MainWidget() {
   delete ui;
 }
 
-void MainWidget::OnRefresh() {
+void MainWidget::OnMainPageRefresh() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
   if (ec == kNoDevice) {
@@ -464,11 +467,34 @@ void MainWidget::OnRefresh() {
 }
 
 void MainWidget::OnBtnSetPIN() {
+  std::string pwd = ui->edit_pin->text().toStdString();
+  if (pwd.empty()) {
+    MsgBox(tr("Please input the password"));
+    return;
+  }
+  auto ec = local_auth_->SetPassword(pwd);
+  if (ec != kSuccess) {
+    MsgBox(tr("Failed to set password"));
+    return;
+  }
 
+  MsgBox(tr("Success"));
+
+  UpdatePinPage();
 }
 
 void MainWidget::OnBtnVerifyPIN() {
-
+  std::string pwd = ui->edit_pin->text().toStdString();
+  if (pwd.empty()) {
+    MsgBox(tr("Please input the password"));
+    return;
+  }
+  auto ec = local_auth_->VerifyPassword(pwd);
+  if (ec != kSuccess) {
+    MsgBox(tr("Password is not match"));
+    return;
+  }
+  OnMainPageRefresh();
   // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
   {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
@@ -478,7 +504,24 @@ void MainWidget::OnBtnVerifyPIN() {
 }
 
 void MainWidget::OnBtnChangePIN() {
+  std::string pwd = ui->edit_pin->text().toStdString();
+  std::string new_pwd = ui->edit_new_pin->text().toStdString();
+  if (pwd.empty()) {
+    MsgBox(tr("Please input the password"));
+    return;
+  }
+  if (new_pwd.empty()) {
+    MsgBox(tr("Please input the new password"));
+    return;
+  }
+  auto ec = local_auth_->ChangePassword(pwd, new_pwd);
+  if (ec != kSuccess) {
+    MsgBox(tr("Failed to change the password"));
+    return;
+  }
 
+  MsgBox(tr("Success"));
+  OnMainPageRefresh();
   // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
   {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
@@ -490,7 +533,7 @@ void MainWidget::OnBtnChangePIN() {
 void MainWidget::showEvent(QShowEvent* event) {
   auto index = ui->stackedWidget->currentIndex();
   if (index == kPageOperatorIndex) {
-    OnRefresh();
+    OnMainPageRefresh();
   }
 }
 
@@ -518,4 +561,12 @@ void MainWidget::UpdateComboBox() {
     }
     ui->comboBox->addItems(list);
   }
+}
+
+void MainWidget::UpdatePinPage() {
+  bool exitst = local_auth_->HavePassword();
+  ui->btn_set_pin->setVisible(!exitst);
+  ui->btn_verify_pin->setVisible(exitst);
+  ui->btn_change_pin->setVisible(exitst);
+  ui->edit_new_pin->setVisible(exitst);
 }
