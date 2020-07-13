@@ -8,14 +8,10 @@ namespace fs = std::filesystem;
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  auto current_path = fs::current_path();
-  auto qm_path = current_path.parent_path().append("user_zh-cn.qm");
-
   QTranslator translator;
-  bool b = translator.load(QString::fromStdString(qm_path.string()));
-  if (b) {
+  if (translator.load(":/translations/user_zh-cn.ts")) {
     app.installTranslator(&translator);
-  }
+  } else {}
 
   MainWidget w;
   w.show();
