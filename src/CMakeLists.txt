@@ -62,6 +62,10 @@ target_link_libraries(proto_test PUBLIC
 )
 
 # admin
+message(STATUS "------------${CMAKE_SOURCE_DIR}/src/admin------------")
+qt5_create_translation(ADMIN_QM_FILES admin admin/admin_zh-cn.ts)
+message(STATUS "------------${ADMIN_QM_FILES}------------")
+message(STATUS "------------CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}------------")
 add_executable(admin WIN32
   utils.cpp
   crypto.cpp
@@ -75,6 +79,7 @@ add_executable(admin WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
+  ${ADMIN_QM_FILES}
 )
 target_include_directories(admin PUBLIC 
   ${PROTOBUF_INCLUDE_DIRS}
@@ -95,6 +100,7 @@ add_custom_command(TARGET admin POST_BUILD
 )
 
 # user
+qt5_create_translation(USER_QM_FILES user user/user_zh-cn.ts)
 add_executable(user WIN32
   utils.cpp
   crypto.cpp
@@ -107,6 +113,7 @@ add_executable(user WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
+  ${USER_QM_FILES}
 )
 target_include_directories(user PUBLIC 
   ${PROTOBUF_INCLUDE_DIRS}
