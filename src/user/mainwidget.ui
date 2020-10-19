@@ -17,7 +17,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_pin">
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -37,6 +37,13 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
+          <widget class="QLabel" name="label_pin">
+           <property name="text">
+            <string>PIN</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QLineEdit" name="edit_pin"/>
          </item>
          <item>
@@ -50,6 +57,13 @@
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="label_new_pin">
+           <property name="text">
+            <string>New PIN</string>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QLineEdit" name="edit_new_pin"/>
          </item>

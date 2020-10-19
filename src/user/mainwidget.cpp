@@ -65,7 +65,7 @@ MainWidget::MainWidget(QWidget *parent) :
   ui(new Ui::MainWidget) {
   ui->setupUi(this);
 
-  this->setFixedSize(600, 450);
+  this->setFixedSize(500, 100);
   this->setWindowTitle(tr("User"));
 
   ui->comboBox->setEditable(false);
@@ -396,6 +396,7 @@ void MainWidget::OnBtnVerifyPIN() {
   UpdateSenderLabel();
   UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
+  this->setFixedSize(600, 200);
 }
 
 void MainWidget::OnBtnChangePIN() {

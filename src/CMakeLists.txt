@@ -67,6 +67,8 @@ qt5_create_translation(ADMIN_QM_FILES admin admin/admin_zh-cn.ts)
 message(STATUS "------------${ADMIN_QM_FILES}------------")
 message(STATUS "------------CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}------------")
 configure_file(admin/admin.qrc ${CMAKE_BINARY_DIR}/src COPYONLY)
+#qt5_add_resources(ADMIN_RC admin/admin.qrc)
+#message(STATUS "------------ADMIN_RC: ${ADMIN_RC}------------")
 add_executable(admin WIN32
   utils.cpp
   crypto.cpp
@@ -80,7 +82,6 @@ add_executable(admin WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
-  ${ADMIN_QM_FILES}
   ${CMAKE_BINARY_DIR}/src/admin.qrc
 )
 target_include_directories(admin PUBLIC 
@@ -116,7 +117,6 @@ add_executable(user WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
-  ${USER_QM_FILES}
   ${CMAKE_BINARY_DIR}/src/user.qrc
 )
 target_include_directories(user PUBLIC 

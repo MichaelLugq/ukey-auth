@@ -41,8 +41,11 @@ MainWidget::MainWidget(QWidget *parent) :
   local_auth_(new LocalAuth()) {
   ui->setupUi(this);
 
-  this->setFixedSize(600, 450);
+  this->setFixedSize(500, 100);
   this->setWindowTitle(tr("Administrator"));
+
+  ui->label_pin->setText(tr("Please input the PIN"));
+  ui->label_change_pin->setText(tr("The new PIN"));
 
   ui->comboBox->setEditable(false);
 
@@ -76,6 +79,7 @@ MainWidget::MainWidget(QWidget *parent) :
       return;
     } else {
       ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
+      this->setFixedSize(600, 350);
     }
 
     // 读取文件
@@ -498,6 +502,9 @@ void MainWidget::OnBtnVerifyPIN() {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
+    if (input) {
+      this->setFixedSize(600, 350);
+    }
   }
 }
 
@@ -567,4 +574,9 @@ void MainWidget::UpdatePinPage() {
   ui->btn_verify_pin->setVisible(exitst);
   ui->btn_change_pin->setVisible(exitst);
   ui->edit_new_pin->setVisible(exitst);
+
+  ui->label_change_pin->setVisible(exitst);
+  if (exitst) {
+    ui->label_pin->setText(tr("PIN"));
+  }
 }
