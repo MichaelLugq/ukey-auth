@@ -54,18 +54,12 @@ static const int kPagePINIndex = 0;
 //
 static const int kPageOpIndex = 1;
 
-void MsgBox(const QString& msg) {
-  QMessageBox msgBox;
-  msgBox.setText(msg);
-  msgBox.exec();
-}
-
 MainWidget::MainWidget(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::MainWidget) {
   ui->setupUi(this);
 
-  this->setFixedSize(500, 100);
+  this->setFixedSize(500, 80);
   this->setWindowTitle(tr("User"));
 
   ui->comboBox->setEditable(false);
@@ -79,6 +73,7 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_verify_pin, &QPushButton::clicked, this, &MainWidget::OnBtnVerifyPIN);
   connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateIndex);
+  connect(ui->btn_update_browser, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateBrowser);
 }
 
 MainWidget::~MainWidget() {
@@ -396,11 +391,11 @@ void MainWidget::OnBtnVerifyPIN() {
   UpdateSenderLabel();
   UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
-  this->setFixedSize(600, 200);
+  this->setFixedSize(600, 400);
 }
 
 void MainWidget::OnBtnChangePIN() {
-  std::string pwd = ui->edit_pin->text().toStdString();
+  std::string pwd = ui->edit_old_pin->text().toStdString();
   if (pwd.empty()) {
     MsgBox(tr("Please input the password"));
     return;
@@ -422,11 +417,13 @@ void MainWidget::OnBtnChangePIN() {
   UpdateSenderLabel();
   UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
+  this->setFixedSize(600, 400);
 }
 
 void MainWidget::OnBtnUpdateIndex() {
   {
-    std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
+    //std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
+    std::string path = ui->edit_update_path->text().toLocal8Bit().data();
     std::ifstream input(path, std::ios::in | std::ios::binary);
     if (!input) {
       MsgBox(tr("Failed to read file"));
@@ -445,6 +442,12 @@ void MainWidget::OnBtnUpdateIndex() {
     }
   }
   UpdateComboBox();
+  MsgBox(tr("Success"));
+}
+
+void MainWidget::OnBtnUpdateBrowser() {
+  ui->edit_update_path->setText(QFileDialog::getOpenFileName(this, tr("Open File")));
+  //std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
 }
 
 void MainWidget::UpdateSenderLabel() {
@@ -481,4 +484,11 @@ void MainWidget::UpdateComboBox() {
     }
     ui->comboBox->addItems(list);
   }
+}
+
+void MainWidget::MsgBox(const QString& msg) {
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle(tr("Tip"));
+  msgBox.setText(msg);
+  msgBox.exec();
 }

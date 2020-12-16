@@ -10,6 +10,7 @@
 #include "secret.pb.h"
 #include "index.pb.h"
 
+#include <QFileDialog>
 #include <QMessageBox>
 
 #include <ctime>
@@ -29,11 +30,6 @@ static const int kPageOperatorIndex = 2;
   auto set_enabled = [&](BYTE*) { btn->setEnabled(true); };      \
   std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
 
-void MsgBox(const QString& msg) {
-  QMessageBox msgBox;
-  msgBox.setText(msg);
-  msgBox.exec();
-}
 
 MainWidget::MainWidget(QWidget *parent) :
   QWidget(parent),
@@ -424,8 +420,28 @@ MainWidget::MainWidget(QWidget *parent) :
     SetDisable(ui->btn_download);
 
     // 检查index.db是否存在，如果存在则读取，不存在则提示错误
+    if (!LocalIndexExists()) {
+      MsgBox(tr("Failed to read user index"));
+      return;
+    }
 
     // index.db另存为
+    std::error_code ec;
+    fs::path from = fs::current_path(ec).append("index.db");
+
+    auto dest_path = QFileDialog::getExistingDirectory(this);
+    if (dest_path.isEmpty()) {
+      MsgBox(tr("destination path is valid: ") + dest_path);
+    }
+
+    fs::path to = fs::path(dest_path.toStdString()).append("index-" + TimeString() + ".db");
+
+    fs::copy(from, to, ec);
+    if (!ec) {
+      MsgBox(tr("Success, Store to ") + QString::fromStdWString(to.c_str()));
+    } else {
+      MsgBox(tr("Failed to download users' information"));
+    }
   });
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
@@ -509,7 +525,7 @@ void MainWidget::OnBtnVerifyPIN() {
 }
 
 void MainWidget::OnBtnChangePIN() {
-  std::string pwd = ui->edit_pin->text().toStdString();
+  std::string pwd = ui->edit_old_pin->text().toStdString();
   std::string new_pwd = ui->edit_new_pin->text().toStdString();
   if (pwd.empty()) {
     MsgBox(tr("Please input the password"));
@@ -532,6 +548,9 @@ void MainWidget::OnBtnChangePIN() {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
+    if (input) {
+      this->setFixedSize(600, 350);
+    }
   }
 }
 
@@ -579,4 +598,11 @@ void MainWidget::UpdatePinPage() {
   if (exitst) {
     ui->label_pin->setText(tr("PIN"));
   }
+}
+
+void MainWidget::MsgBox(const QString& msg) {
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle(tr("Tip"));
+  msgBox.setText(msg);
+  msgBox.exec();
 }

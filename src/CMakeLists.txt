@@ -82,6 +82,7 @@ add_executable(admin WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
+  ${ADMIN_QM_FILES}
   ${CMAKE_BINARY_DIR}/src/admin.qrc
 )
 target_include_directories(admin PUBLIC 
@@ -117,6 +118,7 @@ add_executable(user WIN32
   ${secret_PROTO_HDR}
   ${index_PROTO_SRCS}
   ${index_PROTO_HDR}
+  ${USER_QM_FILES}
   ${CMAKE_BINARY_DIR}/src/user.qrc
 )
 target_include_directories(user PUBLIC 
