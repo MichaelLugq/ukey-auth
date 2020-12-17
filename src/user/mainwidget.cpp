@@ -425,8 +425,8 @@ void MainWidget::OnBtnChangePIN() {
 
   UpdateSenderLabel();
   UpdateComboBox();
-  ui->stackedWidget->setCurrentIndex(kPageOpIndex);
-  this->setFixedSize(600, 400);
+
+  MsgBox(tr("Success"));
 }
 
 void MainWidget::OnBtnUpdateIndex() {
@@ -459,7 +459,6 @@ void MainWidget::OnBtnUpdateIndex() {
 
 void MainWidget::OnBtnUpdateBrowser() {
   ui->edit_update_path->setText(QFileDialog::getOpenFileName(this, tr("Open File")));
-  //std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
 }
 
 void MainWidget::UpdateSenderLabel() {
