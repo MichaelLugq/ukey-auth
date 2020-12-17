@@ -14,7 +14,7 @@
         <translation>密码：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="125"/>
+        <location filename="mainwidget.ui" line="129"/>
         <source>Verify</source>
         <translation>登录</translation>
     </message>
@@ -23,12 +23,12 @@
         <translation type="vanished">新密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="325"/>
+        <location filename="mainwidget.ui" line="337"/>
         <source>Change</source>
         <translation>修改密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="178"/>
+        <location filename="mainwidget.ui" line="182"/>
         <source>File:</source>
         <translation>待操作文件</translation>
     </message>
@@ -38,52 +38,52 @@
         <translation>账号：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="158"/>
+        <location filename="mainwidget.ui" line="162"/>
         <source>File Operation</source>
         <translation>文件操作</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="188"/>
+        <location filename="mainwidget.ui" line="192"/>
         <source>Brower</source>
         <translation>浏览</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="211"/>
+        <location filename="mainwidget.ui" line="215"/>
         <source>Current:</source>
         <translation>当前用户</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="218"/>
+        <location filename="mainwidget.ui" line="222"/>
         <source>XXX</source>
         <translation>XXX</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="290"/>
+        <location filename="mainwidget.ui" line="294"/>
         <source>Set</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="298"/>
+        <location filename="mainwidget.ui" line="302"/>
         <source>Change Pasword </source>
         <translation>密码修改：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="305"/>
+        <location filename="mainwidget.ui" line="309"/>
         <source>Old PIN:</source>
         <translation>原密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="315"/>
+        <location filename="mainwidget.ui" line="323"/>
         <source>New PIN:</source>
         <translation>新密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="336"/>
+        <location filename="mainwidget.ui" line="348"/>
         <source>Update Config:</source>
         <translation>更新配置：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="346"/>
+        <location filename="mainwidget.ui" line="358"/>
         <source>Browser</source>
         <translation>浏览</translation>
     </message>
@@ -92,33 +92,33 @@
         <translation type="vanished">接收者</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="353"/>
+        <location filename="mainwidget.ui" line="365"/>
         <source>Update</source>
         <translation>确定</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="271"/>
+        <location filename="mainwidget.ui" line="275"/>
         <source>Encrypt</source>
         <translation>授权分发</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="237"/>
+        <location filename="mainwidget.ui" line="241"/>
         <source>Auth to:</source>
         <translation>授权给：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="278"/>
+        <location filename="mainwidget.ui" line="282"/>
         <source>Decrypt</source>
         <translation>解密阅读</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="63"/>
         <source>User</source>
-        <translation>使用者</translation>
+        <translation>使用者v1.0</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="87"/>
-        <location filename="mainwidget.cpp" line="452"/>
+        <location filename="mainwidget.cpp" line="461"/>
         <source>Open File</source>
         <translation>打开文件</translation>
     </message>
@@ -189,7 +189,8 @@
         <translation>加密数据失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="448"/>
+        <location filename="mainwidget.cpp" line="429"/>
+        <location filename="mainwidget.cpp" line="457"/>
         <source>Success</source>
         <translation>成功</translation>
     </message>
@@ -241,77 +242,77 @@
     </message>
     <message>
         <location filename="mainwidget.cpp" line="385"/>
-        <location filename="mainwidget.cpp" line="403"/>
+        <location filename="mainwidget.cpp" line="406"/>
         <source>Please input the password</source>
         <translation>请输入登录密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="390"/>
+        <location filename="mainwidget.cpp" line="393"/>
         <source>Failed to verify PIN</source>
         <translation>验证PIN码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="409"/>
+        <location filename="mainwidget.cpp" line="412"/>
         <source>Please input the new password</source>
         <translation>请输入登录密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="416"/>
+        <location filename="mainwidget.cpp" line="422"/>
         <source>Failed to change PIN</source>
         <translation>修改密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="432"/>
+        <location filename="mainwidget.cpp" line="438"/>
         <source>Failed to read file</source>
         <translation>读取文件失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="437"/>
+        <location filename="mainwidget.cpp" line="443"/>
         <source>Failed to parse file</source>
         <translation>分析文件失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="443"/>
+        <location filename="mainwidget.cpp" line="452"/>
         <source>Failed to write information to USB Key</source>
         <translation>写入UKey失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="460"/>
+        <location filename="mainwidget.cpp" line="468"/>
         <source>No device is found</source>
         <translation>未检测到设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="461"/>
+        <location filename="mainwidget.cpp" line="469"/>
         <source>Cannot get sender</source>
         <translation>无法获取用户信息</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="476"/>
+        <location filename="mainwidget.cpp" line="484"/>
         <source>Failed to read other user&apos;s information from USB Key</source>
         <translation>无法读取其他用户信息</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="496"/>
+        <location filename="mainwidget.cpp" line="504"/>
         <source>Tip</source>
         <translation>提示</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="504"/>
+        <location filename="mainwidget.cpp" line="512"/>
         <source>Device not found</source>
         <translation>未检测到设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="506"/>
+        <location filename="mainwidget.cpp" line="514"/>
         <source>Too many device, please insert one only</source>
         <translation>当前检测到多个设备，请只插入一个设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="508"/>
+        <location filename="mainwidget.cpp" line="516"/>
         <source>Failed to connect device</source>
         <translation>连接设备失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="510"/>
+        <location filename="mainwidget.cpp" line="518"/>
         <source>Unknown error</source>
         <translation>未知错误</translation>
     </message>

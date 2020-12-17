@@ -455,6 +455,70 @@ MainWidget::MainWidget(QWidget *parent) :
     }
   });
 
+  connect(ui->btn_download_to_ukey, &QPushButton::clicked, this, [&]() {
+    // 置灰
+    SetDisable(ui->btn_download_to_ukey);
+
+    // 检查index.db是否存在，如果存在则读取，不存在则提示错误
+    if (!LocalIndexExists()) {
+      MsgBox(tr("Failed to read user index"));
+      return;
+    }
+
+    // index.db另存为
+    std::error_code ec;
+    fs::path from = fs::current_path(ec).append("index.db");
+
+    // 检查是否空的USB Key，为空直接提示并返回
+    {
+      proto::NameIndex usrindex;
+      auto ec = ReadUserIndex(usrindex);
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec == kNoWrittenFlag) {
+        // TODO: MsgBox(ec.msg());
+        MsgBox(tr("The USB key has not been authorized to use"));
+        return;
+      }
+    }
+
+    // 检查index.db是否存在，如果存在则读取
+    proto::IndexInfo indexs;
+    {
+      int ec = ReadLocalIndexs(indexs);
+      if (ec == kNoIndexDB) {
+        MsgBox(tr("Local file with users' information is not found"));
+        return;
+      } else if (ec != kSuccess) {
+        MsgBox(tr("Failed to read local user information"));
+        return;
+      }
+    }
+
+    {
+      // 其他用户（写）
+      {
+        int ec = WriteOthersIndex(indexs);
+        if (ec != 0) {
+          MsgBox(tr("Failed to write other users data to USB Key"));
+          return;
+        }
+      }
+
+      // 其他用户（读）
+      {
+        proto::IndexInfo infos;
+        if (ReadOthersIndex(infos) != kSuccess) {
+          MsgBox(tr("Failed to parse other users data from stream"));
+          return;
+        }
+      }
+    }
+
+    MsgBox(tr("Success to download information to USB Key"));
+  });
+
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
 
   connect(ui->btn_add, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);

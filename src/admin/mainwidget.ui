@@ -295,6 +295,13 @@
            </spacer>
           </item>
           <item>
+           <widget class="QPushButton" name="btn_download_to_ukey">
+            <property name="text">
+             <string>Download to UKey</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="btn_download">
             <property name="text">
              <string>Download</string>
