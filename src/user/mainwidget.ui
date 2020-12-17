@@ -17,7 +17,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_pin">
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -87,7 +87,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="edit_pin"/>
+          <widget class="QLineEdit" name="edit_pin">
+           <property name="echoMode">
+            <enum>QLineEdit::Password</enum>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -129,7 +133,7 @@
          <item>
           <widget class="QLabel" name="label_8">
            <property name="text">
-            <string>          </string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -307,7 +311,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="edit_old_pin"/>
+             <widget class="QLineEdit" name="edit_old_pin">
+              <property name="echoMode">
+               <enum>QLineEdit::Password</enum>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_new_pin">
@@ -317,7 +325,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="edit_new_pin"/>
+             <widget class="QLineEdit" name="edit_new_pin">
+              <property name="echoMode">
+               <enum>QLineEdit::Password</enum>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="btn_change_pin">

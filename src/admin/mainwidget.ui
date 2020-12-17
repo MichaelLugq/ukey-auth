@@ -63,7 +63,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="edit_pin"/>
+          <widget class="QLineEdit" name="edit_pin">
+           <property name="echoMode">
+            <enum>QLineEdit::Password</enum>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -112,7 +116,7 @@
          <item>
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>        </string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -329,7 +333,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="edit_old_pin"/>
+             <widget class="QLineEdit" name="edit_old_pin">
+              <property name="echoMode">
+               <enum>QLineEdit::Password</enum>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_change_pin">
@@ -339,7 +347,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="edit_new_pin"/>
+             <widget class="QLineEdit" name="edit_new_pin">
+              <property name="echoMode">
+               <enum>QLineEdit::Password</enum>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="btn_change_pin">

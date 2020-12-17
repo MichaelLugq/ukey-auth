@@ -31,6 +31,9 @@ class MainWidget : public QWidget {
   void UpdatePinPage();
 
   void MsgBox(const QString& msg);
+
+  QString GetInfoFromErrCode(int ec);
+
  private:
   std::unique_ptr<LocalAuth> local_auth_;
 

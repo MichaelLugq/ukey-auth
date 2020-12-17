@@ -249,7 +249,7 @@ void MainWidget::OnBtnEncrypt() {
     }
   }
 
-  MsgBox(tr("Success to encrypt, store to ") + QString::fromStdString(enc_path));
+  MsgBox(tr("Success to encrypt, store to ") + QString::fromLocal8Bit(enc_path.data()));
 }
 
 void MainWidget::OnBtnDecrypt() {
@@ -376,7 +376,7 @@ void MainWidget::OnBtnDecrypt() {
     }
   }
 
-  MsgBox(tr("Success to decrypt, store to ") + QString::fromStdString(dec_path));
+  MsgBox(tr("Success to decrypt, store to ") + QString::fromLocal8Bit(dec_path.data()));
 }
 
 void MainWidget::OnBtnVerifyPIN() {
@@ -386,7 +386,10 @@ void MainWidget::OnBtnVerifyPIN() {
     return;
   }
   int ec = VerifyPIN(std::vector<BYTE>(pwd.begin(), pwd.end()));
-  if (ec != kSuccess) {
+  if (ec <= kNoDevice && ec >= kErrConnect) {
+    MsgBox(GetInfoFromErrCode(ec));
+    return;
+  } else if (ec != kSuccess) {
     MsgBox(tr("Failed to verify PIN"));
     return;
   }
@@ -412,7 +415,10 @@ void MainWidget::OnBtnChangePIN() {
 
   int ec = ChangePIN(std::vector<BYTE>(pwd.begin(), pwd.end()),
                      std::vector<BYTE>(new_pwd.begin(), new_pwd.end()));
-  if (ec != kSuccess) {
+  if (ec <= kNoDevice && ec >= kErrConnect) {
+    MsgBox(GetInfoFromErrCode(ec));
+    return;
+  } else if (ec != kSuccess) {
     MsgBox(tr("Failed to change PIN"));
     return;
   }
@@ -439,7 +445,10 @@ void MainWidget::OnBtnUpdateIndex() {
     }
     // 写入USB Key
     auto ec = WriteOthersIndex(indexs);
-    if (ec != kSuccess) {
+    if (ec <= kNoDevice && ec >= kErrConnect) {
+      MsgBox(GetInfoFromErrCode(ec));
+      return;
+    } else if (ec != kSuccess) {
       MsgBox(tr("Failed to write information to USB Key"));
       return;
     }
@@ -496,4 +505,17 @@ void MainWidget::MsgBox(const QString& msg) {
   msgBox.setWindowTitle(tr("Tip"));
   msgBox.setText(msg);
   msgBox.exec();
+}
+
+QString MainWidget::GetInfoFromErrCode(int ec) {
+  switch (ec) {
+  case kNoDevice:
+    return tr("Device not found");
+  case kTooManyDevice:
+    return tr("Too many device, please insert one only");
+  case kErrConnect:
+    return tr("Failed to connect device");
+  default:
+    return tr("Unknown error");
+  }
 }

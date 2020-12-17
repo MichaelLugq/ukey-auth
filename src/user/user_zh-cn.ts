@@ -243,7 +243,7 @@
         <location filename="mainwidget.cpp" line="385"/>
         <location filename="mainwidget.cpp" line="403"/>
         <source>Please input the password</source>
-        <translation>请输入原密码</translation>
+        <translation>请输入登录密码</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="390"/>
@@ -258,7 +258,7 @@
     <message>
         <location filename="mainwidget.cpp" line="416"/>
         <source>Failed to change PIN</source>
-        <translation>修改PIne码失败</translation>
+        <translation>修改密码失败</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="432"/>
@@ -278,7 +278,7 @@
     <message>
         <location filename="mainwidget.cpp" line="460"/>
         <source>No device is found</source>
-        <translation type="unfinished"></translation>
+        <translation>未检测到设备</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="461"/>
@@ -294,6 +294,26 @@
         <location filename="mainwidget.cpp" line="496"/>
         <source>Tip</source>
         <translation>提示</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="504"/>
+        <source>Device not found</source>
+        <translation>未检测到设备</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="506"/>
+        <source>Too many device, please insert one only</source>
+        <translation>当前检测到多个设备，请只插入一个设备</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="508"/>
+        <source>Failed to connect device</source>
+        <translation>连接设备失败</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="510"/>
+        <source>Unknown error</source>
+        <translation>未知错误</translation>
     </message>
 </context>
 </TS>

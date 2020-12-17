@@ -103,7 +103,10 @@ MainWidget::MainWidget(QWidget *parent) :
     {
       proto::NameIndex usrindex;
       auto ec = ReadUserIndex(usrindex);
-      if (ec != kNoWrittenFlag) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kNoWrittenFlag) {
         // TODO: MsgBox(ec.msg());
         MsgBox(tr("Has been written"));
         return;
@@ -269,7 +272,10 @@ MainWidget::MainWidget(QWidget *parent) :
     proto::NameIndex usrindex;
     {
       int ec = ReadUserIndex(usrindex);
-      if (ec != kSuccess) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kSuccess) {
         MsgBox(tr("Failed to read user index"));
         return;
       }
@@ -340,7 +346,10 @@ MainWidget::MainWidget(QWidget *parent) :
     proto::NameIndex usrindex;
     {
       int ec = ReadUserIndex(usrindex);
-      if (ec != kSuccess) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kSuccess) {
         MsgBox(tr("Failed to read user index"));
         return;
       }
@@ -435,7 +444,7 @@ MainWidget::MainWidget(QWidget *parent) :
       return;
     }
 
-    fs::path to = fs::path(dest_path.toStdString()).append("index-" + TimeString() + ".db");
+    fs::path to = fs::path(dest_path.toLocal8Bit().data()).append("index-" + TimeString() + ".db");
     to = to.make_preferred();
 
     fs::copy(from, to, ec);
@@ -607,4 +616,17 @@ void MainWidget::MsgBox(const QString& msg) {
   msgBox.setWindowTitle(tr("Tip"));
   msgBox.setText(msg);
   msgBox.exec();
+}
+
+QString MainWidget::GetInfoFromErrCode(int ec) {
+  switch (ec) {
+  case kNoDevice:
+    return tr("Device not found");
+  case kTooManyDevice:
+    return tr("Too many device, please insert one only");
+  case kErrConnect:
+    return tr("Failed to connect device");
+  default:
+    return tr("Unknown error");
+  }
 }

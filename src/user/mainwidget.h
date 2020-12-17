@@ -29,6 +29,8 @@ class MainWidget : public QWidget {
 
   void MsgBox(const QString& msg);
 
+  QString GetInfoFromErrCode(int ec);
+
  private:
   Ui::MainWidget *ui;
 };
