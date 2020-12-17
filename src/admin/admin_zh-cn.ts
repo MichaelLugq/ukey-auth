@@ -277,7 +277,7 @@
     <message>
         <location filename="mainwidget.cpp" line="519"/>
         <source>Success to download information to USB Key</source>
-        <translation>下载信息到UKey完成</translation>
+        <translation>成功</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="688"/>

@@ -249,12 +249,12 @@
     <message>
         <location filename="mainwidget.cpp" line="393"/>
         <source>Failed to verify PIN</source>
-        <translation>验证PIN码失败</translation>
+        <translation>密码错误</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="412"/>
         <source>Please input the new password</source>
-        <translation>请输入登录密码</translation>
+        <translation>请输入新密码</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="422"/>
