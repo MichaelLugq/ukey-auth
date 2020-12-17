@@ -234,8 +234,8 @@
         <location filename="mainwidget.cpp" line="263"/>
         <location filename="mainwidget.cpp" line="336"/>
         <location filename="mainwidget.cpp" line="424"/>
-        <location filename="mainwidget.cpp" line="574"/>
-        <location filename="mainwidget.cpp" line="619"/>
+        <location filename="mainwidget.cpp" line="568"/>
+        <location filename="mainwidget.cpp" line="613"/>
         <source>Success</source>
         <translation>成功</translation>
     </message>
@@ -261,6 +261,7 @@
     </message>
     <message>
         <location filename="mainwidget.cpp" line="481"/>
+        <location filename="mainwidget.cpp" line="688"/>
         <source>The USB key has not been authorized to use</source>
         <translation>该UKey尚未被授权使用</translation>
     </message>
@@ -280,17 +281,17 @@
         <translation>成功</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="688"/>
+        <location filename="mainwidget.cpp" line="682"/>
         <source>Device not found</source>
         <translation>未检测到设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="690"/>
+        <location filename="mainwidget.cpp" line="684"/>
         <source>Too many device, please insert one only</source>
         <translation>当前设备太多，请只插入一个设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="692"/>
+        <location filename="mainwidget.cpp" line="686"/>
         <source>Failed to connect device</source>
         <translation>连接设备失败</translation>
     </message>
@@ -309,70 +310,81 @@
         <translation>下载用户信息失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="545"/>
         <source>No device</source>
-        <translation>未检测到设备</translation>
+        <translation type="vanished">未检测到设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="547"/>
         <source>Too many devices</source>
-        <translation>当前检测到多个设备，请只插入一个设备</translation>
+        <translation type="vanished">当前检测到多个设备，请只插入一个设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="549"/>
         <source>No user information</source>
-        <translation>未发现用户信息</translation>
+        <translation type="vanished">未发现用户信息</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="551"/>
+        <location filename="mainwidget.cpp" line="545"/>
         <source>The user is </source>
         <translation>当前用户是：</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="555"/>
+        <location filename="mainwidget.cpp" line="549"/>
         <source>Failed to set administrator&apos;s PIN</source>
         <translation>设置管理员密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="558"/>
+        <location filename="mainwidget.cpp" line="690"/>
+        <source>The file to store users&apos; information is not found</source>
+        <translation>未找到用户信息文件</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="692"/>
+        <source>Failed to parse the file to store users&apos; information</source>
+        <translation>解析用户信息文件失败</translation>
+    </message>
+    <message>
         <location filename="mainwidget.cpp" line="694"/>
+        <source>The file to store key pairs is not found</source>
+        <translation>未找到密钥对文件</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="696"/>
         <source>Unknown error</source>
         <translation>未知错误</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="565"/>
-        <location filename="mainwidget.cpp" line="582"/>
-        <location filename="mainwidget.cpp" line="606"/>
+        <location filename="mainwidget.cpp" line="559"/>
+        <location filename="mainwidget.cpp" line="576"/>
+        <location filename="mainwidget.cpp" line="600"/>
         <source>Please input the password</source>
         <translation>请输入登录密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="570"/>
+        <location filename="mainwidget.cpp" line="564"/>
         <source>Failed to set password</source>
         <translation>设置密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="587"/>
+        <location filename="mainwidget.cpp" line="581"/>
         <source>Password is not match</source>
         <translation>密码错误</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="610"/>
+        <location filename="mainwidget.cpp" line="604"/>
         <source>Please input the new password</source>
         <translation>请输入新密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="615"/>
+        <location filename="mainwidget.cpp" line="609"/>
         <source>Failed to change the password</source>
         <translation>修改密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="674"/>
+        <location filename="mainwidget.cpp" line="668"/>
         <source>PIN</source>
         <translation>密码：  </translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="680"/>
+        <location filename="mainwidget.cpp" line="674"/>
         <source>Tip</source>
         <translation>提示</translation>
     </message>

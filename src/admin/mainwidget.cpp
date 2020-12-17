@@ -75,7 +75,7 @@ MainWidget::MainWidget(QWidget *parent) :
       return;
     } else {
       ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
-      this->setFixedSize(600, 350);
+      this->setFixedSize(600, 400);
     }
 
     // 读取文件
@@ -541,13 +541,7 @@ MainWidget::~MainWidget() {
 void MainWidget::OnMainPageRefresh() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
-  if (ec == kNoDevice) {
-    ui->label_user->setText(tr("No device"));
-  } else if (ec == kTooManyDevice) {
-    ui->label_user->setText(tr("Too many devices"));
-  } else if (ec == kNoWrittenFlag) {
-    ui->label_user->setText(tr("No user information"));
-  } else if (ec == kSuccess) {
+  if (ec == kSuccess) {
     ui->label_user->setText(tr("The user is ") + QString::fromStdString(index.name()));
     // 设置管理员权限
     auto ec = SetAdminPIN(std::vector<BYTE>(6, '0'));
@@ -555,7 +549,7 @@ void MainWidget::OnMainPageRefresh() {
       MsgBox(tr("Failed to set administrator's PIN"));
     }
   } else {
-    ui->label_user->setText(tr("Unknown error"));
+    ui->label_user->setText(GetInfoFromErrCode(ec));
   }
 }
 
@@ -594,7 +588,7 @@ void MainWidget::OnBtnVerifyPIN() {
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
     if (input) {
-      this->setFixedSize(600, 350);
+      this->setFixedSize(600, 400);
     }
   }
 }
@@ -624,7 +618,7 @@ void MainWidget::OnBtnChangePIN() {
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
     if (input) {
-      this->setFixedSize(600, 350);
+      this->setFixedSize(600, 400);
     }
   }
 }
@@ -690,6 +684,14 @@ QString MainWidget::GetInfoFromErrCode(int ec) {
     return tr("Too many device, please insert one only");
   case kErrConnect:
     return tr("Failed to connect device");
+  case kNoWrittenFlag:
+    return tr("The USB key has not been authorized to use");
+  case kNoIndexDB:
+    return tr("The file to store users' information is not found");
+  case kErrParseProto:
+    return tr("Failed to parse the file to store users' information");
+  case kNoSecretDB:
+    return tr("The file to store key pairs is not found");
   default:
     return tr("Unknown error");
   }

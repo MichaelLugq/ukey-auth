@@ -277,14 +277,17 @@
         <translation>写入UKey失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="468"/>
-        <source>No device is found</source>
-        <translation>未检测到设备</translation>
+        <location filename="mainwidget.cpp" line="518"/>
+        <source>The USB key has not been authorized to use</source>
+        <translation>该UKey尚未被授权使用</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="469"/>
+        <source>No device is found</source>
+        <translation type="vanished">未检测到设备</translation>
+    </message>
+    <message>
         <source>Cannot get sender</source>
-        <translation>无法获取用户信息</translation>
+        <translation type="vanished">无法获取用户信息</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="484"/>
@@ -312,7 +315,22 @@
         <translation>连接设备失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="518"/>
+        <location filename="mainwidget.cpp" line="520"/>
+        <source>The file to store users&apos; information is not found</source>
+        <translation>未找到用户信息文件</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="522"/>
+        <source>Failed to parse the file to store users&apos; information</source>
+        <translation>解析用户信息文件失败</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="524"/>
+        <source>The file to store key pairs is not found</source>
+        <translation>未找到密钥对文件</translation>
+    </message>
+    <message>
+        <location filename="mainwidget.cpp" line="526"/>
         <source>Unknown error</source>
         <translation>未知错误</translation>
     </message>

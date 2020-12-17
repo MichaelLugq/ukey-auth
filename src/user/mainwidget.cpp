@@ -465,8 +465,8 @@ void MainWidget::UpdateSenderLabel() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
   if (ec != kSuccess) {
-    ui->edit_account->setText(tr("No device is found"));
-    ui->label_sender->setText(tr("Cannot get sender"));
+    ui->edit_account->setText(GetInfoFromErrCode(ec));
+    ui->label_sender->setText(GetInfoFromErrCode(ec));
     ui->label_sender->setProperty(kIndexFlag.c_str(), QVariant(-1));
   } else {
     ui->edit_account->setText(QString::fromStdString(index.name()));
@@ -514,6 +514,14 @@ QString MainWidget::GetInfoFromErrCode(int ec) {
     return tr("Too many device, please insert one only");
   case kErrConnect:
     return tr("Failed to connect device");
+  case kNoWrittenFlag:
+    return tr("The USB key has not been authorized to use");
+  case kNoIndexDB:
+    return tr("The file to store users' information is not found");
+  case kErrParseProto:
+    return tr("Failed to parse the file to store users' information");
+  case kNoSecretDB:
+    return tr("The file to store key pairs is not found");
   default:
     return tr("Unknown error");
   }
