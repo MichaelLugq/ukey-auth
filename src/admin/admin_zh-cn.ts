@@ -9,22 +9,22 @@
         <translation>主界面</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="42"/>
+        <location filename="mainwidget.ui" line="61"/>
         <source>TextLabel</source>
         <translation>请输入初始密码：</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="52"/>
+        <location filename="mainwidget.ui" line="101"/>
         <source>Set</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="59"/>
+        <location filename="mainwidget.ui" line="108"/>
         <source>Verify</source>
         <translation>登录</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="291"/>
+        <location filename="mainwidget.ui" line="347"/>
         <source>Change</source>
         <translation>修改密码</translation>
     </message>
@@ -37,72 +37,72 @@
         <translation type="vanished">生成</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="119"/>
+        <location filename="mainwidget.ui" line="175"/>
         <source>Generate Key Pair</source>
         <translation>生成密钥对</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="158"/>
+        <location filename="mainwidget.ui" line="214"/>
         <source>Input</source>
         <translation>用户管理</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="172"/>
+        <location filename="mainwidget.ui" line="228"/>
         <source>Name</source>
         <translation>请输入用户名</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="194"/>
+        <location filename="mainwidget.ui" line="250"/>
         <source>Add</source>
         <translation>添加用户</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="201"/>
+        <location filename="mainwidget.ui" line="257"/>
         <source>Update</source>
         <translation>更新用户名</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="211"/>
+        <location filename="mainwidget.ui" line="267"/>
         <source>All users</source>
         <translation>所有用户</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="240"/>
+        <location filename="mainwidget.ui" line="296"/>
         <source>Download</source>
-        <translation>下载用户信息</translation>
+        <translation>下载用户信息到本地</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="263"/>
+        <location filename="mainwidget.ui" line="319"/>
         <source>Change Password</source>
         <translation>密码修改</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="271"/>
+        <location filename="mainwidget.ui" line="327"/>
         <source>Old PIN:</source>
-        <translation>原密码：</translation>
+        <translation>原密码 </translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="281"/>
+        <location filename="mainwidget.ui" line="337"/>
         <source>New PIN:</source>
-        <translation>新密码：</translation>
+        <translation>新密码  </translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="316"/>
+        <location filename="mainwidget.ui" line="372"/>
         <source>Current user</source>
         <translation>当前用户</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="322"/>
+        <location filename="mainwidget.ui" line="378"/>
         <source>The user is zhouhaohao</source>
         <translation>用户名是</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="345"/>
+        <location filename="mainwidget.ui" line="401"/>
         <source>Delete</source>
         <translation>删除当前用户</translation>
     </message>
     <message>
-        <location filename="mainwidget.ui" line="352"/>
+        <location filename="mainwidget.ui" line="408"/>
         <source>Refresh</source>
         <translation>刷新用户信息</translation>
     </message>
@@ -114,7 +114,7 @@
     <message>
         <location filename="mainwidget.cpp" line="43"/>
         <source>Please input the PIN</source>
-        <translation>请输入初始密码</translation>
+        <translation>请输入初始密码：</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="44"/>
@@ -145,7 +145,7 @@
     <message>
         <location filename="mainwidget.cpp" line="108"/>
         <source>Has been written</source>
-        <translation>该用户已存在</translation>
+        <translation>UKey中已存在用户</translation>
     </message>
     <message>
         <location filename="mainwidget.cpp" line="119"/>
@@ -226,8 +226,8 @@
         <location filename="mainwidget.cpp" line="260"/>
         <location filename="mainwidget.cpp" line="330"/>
         <location filename="mainwidget.cpp" line="415"/>
-        <location filename="mainwidget.cpp" line="499"/>
-        <location filename="mainwidget.cpp" line="544"/>
+        <location filename="mainwidget.cpp" line="501"/>
+        <location filename="mainwidget.cpp" line="546"/>
         <source>Success</source>
         <translation>成功</translation>
     </message>
@@ -237,7 +237,6 @@
         <translation>清空用户信息失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="298"/>
         <location filename="mainwidget.cpp" line="363"/>
         <source>Failed to read local indexs</source>
         <translation>读取本地用户信息失败</translation>
@@ -253,84 +252,83 @@
         <translation>写入用户信息到USB Key失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="434"/>
         <source>destination path is valid: </source>
-        <translation>目标路径无效：</translation>
+        <translation type="vanished">目标路径无效</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="441"/>
+        <location filename="mainwidget.cpp" line="443"/>
         <source>Success, Store to </source>
         <translation>下载成功，已下载到 </translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="443"/>
+        <location filename="mainwidget.cpp" line="445"/>
         <source>Failed to download users&apos; information</source>
         <translation>下载用户信息失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="470"/>
+        <location filename="mainwidget.cpp" line="472"/>
         <source>No device</source>
         <translation>未发现设备</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="472"/>
+        <location filename="mainwidget.cpp" line="474"/>
         <source>Too many devices</source>
         <translation>设备太多</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="474"/>
+        <location filename="mainwidget.cpp" line="476"/>
         <source>No user information</source>
         <translation>未发现用户信息</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="476"/>
+        <location filename="mainwidget.cpp" line="478"/>
         <source>The user is </source>
         <translation>当前用户是：</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="480"/>
+        <location filename="mainwidget.cpp" line="482"/>
         <source>Failed to set administrator&apos;s PIN</source>
         <translation>设置管理员密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="483"/>
+        <location filename="mainwidget.cpp" line="485"/>
         <source>Unknown error</source>
         <translation>未知错误</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="490"/>
-        <location filename="mainwidget.cpp" line="507"/>
-        <location filename="mainwidget.cpp" line="531"/>
+        <location filename="mainwidget.cpp" line="492"/>
+        <location filename="mainwidget.cpp" line="509"/>
+        <location filename="mainwidget.cpp" line="533"/>
         <source>Please input the password</source>
-        <translation>请输入密码</translation>
+        <translation>请输入登录密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="495"/>
+        <location filename="mainwidget.cpp" line="497"/>
         <source>Failed to set password</source>
         <translation>设置密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="512"/>
+        <location filename="mainwidget.cpp" line="514"/>
         <source>Password is not match</source>
         <translation>密码错误</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="535"/>
+        <location filename="mainwidget.cpp" line="537"/>
         <source>Please input the new password</source>
         <translation>请输入新密码</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="540"/>
+        <location filename="mainwidget.cpp" line="542"/>
         <source>Failed to change the password</source>
         <translation>修改密码失败</translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="599"/>
+        <location filename="mainwidget.cpp" line="601"/>
         <source>PIN</source>
-        <translation>密码  </translation>
+        <translation>密码：  </translation>
     </message>
     <message>
-        <location filename="mainwidget.cpp" line="605"/>
+        <location filename="mainwidget.cpp" line="607"/>
         <source>Tip</source>
         <translation>提示</translation>
     </message>

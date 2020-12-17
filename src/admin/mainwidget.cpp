@@ -37,7 +37,7 @@ MainWidget::MainWidget(QWidget *parent) :
   local_auth_(new LocalAuth()) {
   ui->setupUi(this);
 
-  this->setFixedSize(500, 100);
+  this->setFixedSize(500, 180);
   this->setWindowTitle(tr("Administrator"));
 
   ui->label_pin->setText(tr("Please input the PIN"));
@@ -295,7 +295,7 @@ MainWidget::MainWidget(QWidget *parent) :
       int ec;
       ec = ReadLocalIndexs(indexs);
       if (ec != kSuccess) {
-        MsgBox(tr("Failed to read local indexs"));
+        //MsgBox(tr("Failed to read local indexs"));
         return;
       }
     }
@@ -431,10 +431,12 @@ MainWidget::MainWidget(QWidget *parent) :
 
     auto dest_path = QFileDialog::getExistingDirectory(this);
     if (dest_path.isEmpty()) {
-      MsgBox(tr("destination path is valid: ") + dest_path);
+      //MsgBox(tr("destination path is valid: ") + dest_path);
+      return;
     }
 
     fs::path to = fs::path(dest_path.toStdString()).append("index-" + TimeString() + ".db");
+    to = to.make_preferred();
 
     fs::copy(from, to, ec);
     if (!ec) {

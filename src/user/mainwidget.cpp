@@ -59,11 +59,12 @@ MainWidget::MainWidget(QWidget *parent) :
   ui(new Ui::MainWidget) {
   ui->setupUi(this);
 
-  this->setFixedSize(500, 80);
+  this->setFixedSize(500, 180);
   this->setWindowTitle(tr("User"));
 
   ui->comboBox->setEditable(false);
   ui->edit_path->setEnabled(false);
+  ui->edit_update_path->setEnabled(false);
 
   ui->stackedWidget->setCurrentIndex(kPagePINIndex);
 
@@ -74,6 +75,8 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateIndex);
   connect(ui->btn_update_browser, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateBrowser);
+
+  UpdateSenderLabel();
 }
 
 MainWidget::~MainWidget() {
@@ -246,7 +249,7 @@ void MainWidget::OnBtnEncrypt() {
     }
   }
 
-  MsgBox(tr("Success"));
+  MsgBox(tr("Success to encrypt, store to ") + QString::fromStdString(enc_path));
 }
 
 void MainWidget::OnBtnDecrypt() {
@@ -373,7 +376,7 @@ void MainWidget::OnBtnDecrypt() {
     }
   }
 
-  MsgBox(tr("Success"));
+  MsgBox(tr("Success to decrypt, store to ") + QString::fromStdString(dec_path));
 }
 
 void MainWidget::OnBtnVerifyPIN() {
@@ -454,9 +457,11 @@ void MainWidget::UpdateSenderLabel() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
   if (ec != kSuccess) {
+    ui->edit_account->setText(tr("No device is found"));
     ui->label_sender->setText(tr("Cannot get sender"));
     ui->label_sender->setProperty(kIndexFlag.c_str(), QVariant(-1));
   } else {
+    ui->edit_account->setText(QString::fromStdString(index.name()));
     ui->label_sender->setText(QString::fromStdString(index.name()));
     ui->label_sender->setProperty(kIndexFlag.c_str(), QVariant(index.index()));
   }
