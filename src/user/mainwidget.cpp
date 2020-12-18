@@ -54,22 +54,17 @@ static const int kPagePINIndex = 0;
 //
 static const int kPageOpIndex = 1;
 
-void MsgBox(const QString& msg) {
-  QMessageBox msgBox;
-  msgBox.setText(msg);
-  msgBox.exec();
-}
-
 MainWidget::MainWidget(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::MainWidget) {
   ui->setupUi(this);
 
-  this->setFixedSize(500, 100);
+  this->setFixedSize(500, 180);
   this->setWindowTitle(tr("User"));
 
   ui->comboBox->setEditable(false);
   ui->edit_path->setEnabled(false);
+  ui->edit_update_path->setEnabled(false);
 
   ui->stackedWidget->setCurrentIndex(kPagePINIndex);
 
@@ -79,6 +74,9 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_verify_pin, &QPushButton::clicked, this, &MainWidget::OnBtnVerifyPIN);
   connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateIndex);
+  connect(ui->btn_update_browser, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateBrowser);
+
+  UpdateSenderLabel();
 }
 
 MainWidget::~MainWidget() {
@@ -251,7 +249,7 @@ void MainWidget::OnBtnEncrypt() {
     }
   }
 
-  MsgBox(tr("Success"));
+  MsgBox(tr("Success to encrypt, store to ") + QString::fromLocal8Bit(enc_path.data()));
 }
 
 void MainWidget::OnBtnDecrypt() {
@@ -378,7 +376,7 @@ void MainWidget::OnBtnDecrypt() {
     }
   }
 
-  MsgBox(tr("Success"));
+  MsgBox(tr("Success to decrypt, store to ") + QString::fromLocal8Bit(dec_path.data()));
 }
 
 void MainWidget::OnBtnVerifyPIN() {
@@ -388,7 +386,10 @@ void MainWidget::OnBtnVerifyPIN() {
     return;
   }
   int ec = VerifyPIN(std::vector<BYTE>(pwd.begin(), pwd.end()));
-  if (ec != kSuccess) {
+  if (ec <= kNoDevice && ec >= kErrConnect) {
+    MsgBox(GetInfoFromErrCode(ec));
+    return;
+  } else if (ec != kSuccess) {
     MsgBox(tr("Failed to verify PIN"));
     return;
   }
@@ -396,11 +397,11 @@ void MainWidget::OnBtnVerifyPIN() {
   UpdateSenderLabel();
   UpdateComboBox();
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
-  this->setFixedSize(600, 200);
+  this->setFixedSize(600, 400);
 }
 
 void MainWidget::OnBtnChangePIN() {
-  std::string pwd = ui->edit_pin->text().toStdString();
+  std::string pwd = ui->edit_old_pin->text().toStdString();
   if (pwd.empty()) {
     MsgBox(tr("Please input the password"));
     return;
@@ -414,19 +415,24 @@ void MainWidget::OnBtnChangePIN() {
 
   int ec = ChangePIN(std::vector<BYTE>(pwd.begin(), pwd.end()),
                      std::vector<BYTE>(new_pwd.begin(), new_pwd.end()));
-  if (ec != kSuccess) {
+  if (ec <= kNoDevice && ec >= kErrConnect) {
+    MsgBox(GetInfoFromErrCode(ec));
+    return;
+  } else if (ec != kSuccess) {
     MsgBox(tr("Failed to change PIN"));
     return;
   }
 
   UpdateSenderLabel();
   UpdateComboBox();
-  ui->stackedWidget->setCurrentIndex(kPageOpIndex);
+
+  MsgBox(tr("Success"));
 }
 
 void MainWidget::OnBtnUpdateIndex() {
   {
-    std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
+    //std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
+    std::string path = ui->edit_update_path->text().toLocal8Bit().data();
     std::ifstream input(path, std::ios::in | std::ios::binary);
     if (!input) {
       MsgBox(tr("Failed to read file"));
@@ -439,21 +445,31 @@ void MainWidget::OnBtnUpdateIndex() {
     }
     // 写入USB Key
     auto ec = WriteOthersIndex(indexs);
-    if (ec != kSuccess) {
+    if (ec <= kNoDevice && ec >= kErrConnect) {
+      MsgBox(GetInfoFromErrCode(ec));
+      return;
+    } else if (ec != kSuccess) {
       MsgBox(tr("Failed to write information to USB Key"));
       return;
     }
   }
   UpdateComboBox();
+  MsgBox(tr("Success"));
+}
+
+void MainWidget::OnBtnUpdateBrowser() {
+  ui->edit_update_path->setText(QFileDialog::getOpenFileName(this, tr("Open File")));
 }
 
 void MainWidget::UpdateSenderLabel() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
   if (ec != kSuccess) {
-    ui->label_sender->setText(tr("Cannot get sender"));
+    ui->edit_account->setText(GetInfoFromErrCode(ec));
+    ui->label_sender->setText(GetInfoFromErrCode(ec));
     ui->label_sender->setProperty(kIndexFlag.c_str(), QVariant(-1));
   } else {
+    ui->edit_account->setText(QString::fromStdString(index.name()));
     ui->label_sender->setText(QString::fromStdString(index.name()));
     ui->label_sender->setProperty(kIndexFlag.c_str(), QVariant(index.index()));
   }
@@ -480,5 +496,33 @@ void MainWidget::UpdateComboBox() {
       list.push_back(name/* + ":" + index*/);
     }
     ui->comboBox->addItems(list);
+  }
+}
+
+void MainWidget::MsgBox(const QString& msg) {
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle(tr("Tip"));
+  msgBox.setText(msg);
+  msgBox.exec();
+}
+
+QString MainWidget::GetInfoFromErrCode(int ec) {
+  switch (ec) {
+  case kNoDevice:
+    return tr("Device not found");
+  case kTooManyDevice:
+    return tr("Too many device, please insert one only");
+  case kErrConnect:
+    return tr("Failed to connect device");
+  case kNoWrittenFlag:
+    return tr("The USB key has not been authorized to use");
+  case kNoIndexDB:
+    return tr("The file to store users' information is not found");
+  case kErrParseProto:
+    return tr("Failed to parse the file to store users' information");
+  case kNoSecretDB:
+    return tr("The file to store key pairs is not found");
+  default:
+    return tr("Unknown error");
   }
 }

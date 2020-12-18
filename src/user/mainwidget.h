@@ -21,10 +21,15 @@ class MainWidget : public QWidget {
   void OnBtnVerifyPIN();
   void OnBtnChangePIN();
   void OnBtnUpdateIndex();
+  void OnBtnUpdateBrowser();
 
  private:
   void UpdateSenderLabel();
   void UpdateComboBox();
+
+  void MsgBox(const QString& msg);
+
+  QString GetInfoFromErrCode(int ec);
 
  private:
   Ui::MainWidget *ui;

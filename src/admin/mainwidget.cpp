@@ -10,6 +10,7 @@
 #include "secret.pb.h"
 #include "index.pb.h"
 
+#include <QFileDialog>
 #include <QMessageBox>
 
 #include <ctime>
@@ -29,11 +30,6 @@ static const int kPageOperatorIndex = 2;
   auto set_enabled = [&](BYTE*) { btn->setEnabled(true); };      \
   std::unique_ptr<BYTE, decltype(set_enabled)> ptr((BYTE*)1, set_enabled);
 
-void MsgBox(const QString& msg) {
-  QMessageBox msgBox;
-  msgBox.setText(msg);
-  msgBox.exec();
-}
 
 MainWidget::MainWidget(QWidget *parent) :
   QWidget(parent),
@@ -41,7 +37,7 @@ MainWidget::MainWidget(QWidget *parent) :
   local_auth_(new LocalAuth()) {
   ui->setupUi(this);
 
-  this->setFixedSize(500, 100);
+  this->setFixedSize(500, 180);
   this->setWindowTitle(tr("Administrator"));
 
   ui->label_pin->setText(tr("Please input the PIN"));
@@ -79,7 +75,7 @@ MainWidget::MainWidget(QWidget *parent) :
       return;
     } else {
       ui->stackedWidget->setCurrentIndex(kPageOperatorIndex);
-      this->setFixedSize(600, 350);
+      this->setFixedSize(600, 400);
     }
 
     // 读取文件
@@ -107,7 +103,10 @@ MainWidget::MainWidget(QWidget *parent) :
     {
       proto::NameIndex usrindex;
       auto ec = ReadUserIndex(usrindex);
-      if (ec != kNoWrittenFlag) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kNoWrittenFlag) {
         // TODO: MsgBox(ec.msg());
         MsgBox(tr("Has been written"));
         return;
@@ -273,7 +272,10 @@ MainWidget::MainWidget(QWidget *parent) :
     proto::NameIndex usrindex;
     {
       int ec = ReadUserIndex(usrindex);
-      if (ec != kSuccess) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kSuccess) {
         MsgBox(tr("Failed to read user index"));
         return;
       }
@@ -299,7 +301,7 @@ MainWidget::MainWidget(QWidget *parent) :
       int ec;
       ec = ReadLocalIndexs(indexs);
       if (ec != kSuccess) {
-        MsgBox(tr("Failed to read local indexs"));
+        //MsgBox(tr("Failed to read local indexs"));
         return;
       }
     }
@@ -344,7 +346,10 @@ MainWidget::MainWidget(QWidget *parent) :
     proto::NameIndex usrindex;
     {
       int ec = ReadUserIndex(usrindex);
-      if (ec != kSuccess) {
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec != kSuccess) {
         MsgBox(tr("Failed to read user index"));
         return;
       }
@@ -424,8 +429,94 @@ MainWidget::MainWidget(QWidget *parent) :
     SetDisable(ui->btn_download);
 
     // 检查index.db是否存在，如果存在则读取，不存在则提示错误
+    if (!LocalIndexExists()) {
+      MsgBox(tr("Failed to read user index"));
+      return;
+    }
 
     // index.db另存为
+    std::error_code ec;
+    fs::path from = fs::current_path(ec).append("index.db");
+
+    auto dest_path = QFileDialog::getExistingDirectory(this);
+    if (dest_path.isEmpty()) {
+      //MsgBox(tr("destination path is valid: ") + dest_path);
+      return;
+    }
+
+    fs::path to = fs::path(dest_path.toLocal8Bit().data()).append("index-" + TimeString() + ".db");
+    to = to.make_preferred();
+
+    fs::copy(from, to, ec);
+    if (!ec) {
+      MsgBox(tr("Success, Store to ") + QString::fromStdWString(to.c_str()));
+    } else {
+      MsgBox(tr("Failed to download users' information"));
+    }
+  });
+
+  connect(ui->btn_download_to_ukey, &QPushButton::clicked, this, [&]() {
+    // 置灰
+    SetDisable(ui->btn_download_to_ukey);
+
+    // 检查index.db是否存在，如果存在则读取，不存在则提示错误
+    if (!LocalIndexExists()) {
+      MsgBox(tr("Failed to read user index"));
+      return;
+    }
+
+    // index.db另存为
+    std::error_code ec;
+    fs::path from = fs::current_path(ec).append("index.db");
+
+    // 检查是否空的USB Key，为空直接提示并返回
+    {
+      proto::NameIndex usrindex;
+      auto ec = ReadUserIndex(usrindex);
+      if (ec <= kNoDevice && ec >= kErrConnect) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else if (ec == kNoWrittenFlag) {
+        // TODO: MsgBox(ec.msg());
+        MsgBox(tr("The USB key has not been authorized to use"));
+        return;
+      }
+    }
+
+    // 检查index.db是否存在，如果存在则读取
+    proto::IndexInfo indexs;
+    {
+      int ec = ReadLocalIndexs(indexs);
+      if (ec == kNoIndexDB) {
+        MsgBox(tr("Local file with users' information is not found"));
+        return;
+      } else if (ec != kSuccess) {
+        MsgBox(tr("Failed to read local user information"));
+        return;
+      }
+    }
+
+    {
+      // 其他用户（写）
+      {
+        int ec = WriteOthersIndex(indexs);
+        if (ec != 0) {
+          MsgBox(tr("Failed to write other users data to USB Key"));
+          return;
+        }
+      }
+
+      // 其他用户（读）
+      {
+        proto::IndexInfo infos;
+        if (ReadOthersIndex(infos) != kSuccess) {
+          MsgBox(tr("Failed to parse other users data from stream"));
+          return;
+        }
+      }
+    }
+
+    MsgBox(tr("Success to download information to USB Key"));
   });
 
   connect(ui->btn_refresh, &QPushButton::clicked, this, &MainWidget::OnMainPageRefresh);
@@ -450,13 +541,7 @@ MainWidget::~MainWidget() {
 void MainWidget::OnMainPageRefresh() {
   proto::NameIndex index;
   int ec = ReadUserIndex(index);
-  if (ec == kNoDevice) {
-    ui->label_user->setText(tr("No device"));
-  } else if (ec == kTooManyDevice) {
-    ui->label_user->setText(tr("Too many devices"));
-  } else if (ec == kNoWrittenFlag) {
-    ui->label_user->setText(tr("No user information"));
-  } else if (ec == kSuccess) {
+  if (ec == kSuccess) {
     ui->label_user->setText(tr("The user is ") + QString::fromStdString(index.name()));
     // 设置管理员权限
     auto ec = SetAdminPIN(std::vector<BYTE>(6, '0'));
@@ -464,7 +549,7 @@ void MainWidget::OnMainPageRefresh() {
       MsgBox(tr("Failed to set administrator's PIN"));
     }
   } else {
-    ui->label_user->setText(tr("Unknown error"));
+    ui->label_user->setText(GetInfoFromErrCode(ec));
   }
 }
 
@@ -503,13 +588,13 @@ void MainWidget::OnBtnVerifyPIN() {
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
     if (input) {
-      this->setFixedSize(600, 350);
+      this->setFixedSize(600, 400);
     }
   }
 }
 
 void MainWidget::OnBtnChangePIN() {
-  std::string pwd = ui->edit_pin->text().toStdString();
+  std::string pwd = ui->edit_old_pin->text().toStdString();
   std::string new_pwd = ui->edit_new_pin->text().toStdString();
   if (pwd.empty()) {
     MsgBox(tr("Please input the password"));
@@ -532,6 +617,9 @@ void MainWidget::OnBtnChangePIN() {
     std::fstream input("secret.db", std::ios::in | std::ios::binary);
     ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
     ui->btn_gen->setEnabled(!input);
+    if (input) {
+      this->setFixedSize(600, 400);
+    }
   }
 }
 
@@ -578,5 +666,33 @@ void MainWidget::UpdatePinPage() {
   ui->label_change_pin->setVisible(exitst);
   if (exitst) {
     ui->label_pin->setText(tr("PIN"));
+  }
+}
+
+void MainWidget::MsgBox(const QString& msg) {
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle(tr("Tip"));
+  msgBox.setText(msg);
+  msgBox.exec();
+}
+
+QString MainWidget::GetInfoFromErrCode(int ec) {
+  switch (ec) {
+  case kNoDevice:
+    return tr("Device not found");
+  case kTooManyDevice:
+    return tr("Too many device, please insert one only");
+  case kErrConnect:
+    return tr("Failed to connect device");
+  case kNoWrittenFlag:
+    return tr("The USB key has not been authorized to use");
+  case kNoIndexDB:
+    return tr("The file to store users' information is not found");
+  case kErrParseProto:
+    return tr("Failed to parse the file to store users' information");
+  case kNoSecretDB:
+    return tr("The file to store key pairs is not found");
+  default:
+    return tr("Unknown error");
   }
 }
