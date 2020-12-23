@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <memory>
+#include <thread>
 
 class LocalAuth;
 
@@ -17,11 +18,15 @@ class MainWidget : public QWidget {
   explicit MainWidget(QWidget *parent = 0);
   ~MainWidget();
 
+ signals:
+  void DeviceMonitor(int insert);
+
  private slots:
   void OnMainPageRefresh();
   void OnBtnSetPIN();
   void OnBtnVerifyPIN();
   void OnBtnChangePIN();
+  void OnDeviceMonitor(int insert);
 
  private:
   void showEvent(QShowEvent* event) override;
@@ -34,11 +39,16 @@ class MainWidget : public QWidget {
 
   QString GetInfoFromErrCode(int ec);
 
+  void StartDeviceMonitor();
+  void StopDeviceMonitor();
+
  private:
   std::unique_ptr<LocalAuth> local_auth_;
 
  private:
   Ui::MainWidget *ui;
+  std::thread thread_device_monitor_;
+  bool quit_ = false;
 };
 
 #endif // MAINWIDGET_H

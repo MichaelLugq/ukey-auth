@@ -51,3 +51,8 @@ static const int kLocalUserInfoStartPosition  = 256 * 8;
 
 // 其他用户的用户名和索引的存储起始位置
 static const int kOtherUsersInfoStartPosition = 256 * 16;
+
+// 用于防止进程多开的互斥量名称
+static const std::string kAdminInstanceName = "E391641C - 920A - 4A33 - BFBF - 89C887CC1152";
+
+static const std::string kUserInstanceName = "E848B7D5-6982-4658-A489-DD99A2A1E716";

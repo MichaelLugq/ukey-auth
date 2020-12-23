@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "crypto.h"
 #include "proto.h"
+#include "device_monitor.h"
 
 #include "secret.pb.h"
 #include "index.pb.h"
@@ -76,16 +77,23 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_update, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateIndex);
   connect(ui->btn_update_browser, &QPushButton::clicked, this, &MainWidget::OnBtnUpdateBrowser);
 
+  connect(this, &MainWidget::DeviceMonitor, this, &MainWidget::OnDeviceMonitor);
+
   UpdateSenderLabel();
+
+  StartDeviceMonitor();
 }
 
 MainWidget::~MainWidget() {
+  StopDeviceMonitor();
   delete ui;
 }
 
 void MainWidget::OnBtnBrower() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open File"));
-  ui->edit_path->setText(path);
+  if (!path.isEmpty()) {
+    ui->edit_path->setText(path);
+  }
 }
 
 void MainWidget::OnBtnEncrypt() {
@@ -97,9 +105,21 @@ void MainWidget::OnBtnEncrypt() {
     return;
   }
 
-  auto file_size = fs::file_size(file_path);
-  if (file_size <= 0) {
-    MsgBox(tr("Empty file"));
+  try {
+    bool exists = fs::exists(file_path);
+    if (!exists) {
+      MsgBox(tr("File not found"));
+      return;
+    }
+
+    auto file_size = fs::file_size(file_path);
+    if (file_size <= 0) {
+      MsgBox(tr("Empty file"));
+      return;
+    }
+
+  } catch (std::exception e) {
+    MsgBox(tr("Unknown error"));
     return;
   }
 
@@ -117,8 +137,13 @@ void MainWidget::OnBtnEncrypt() {
     proto::IndexInfo indexs;
     ec = ReadOthersIndex(indexs);
     if (ec != kSuccess) {
-      MsgBox(tr("Failed to read users information"));
-      return;
+      if (ec <= kNoDevice && ec >= kNoSecretDB) {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      } else  {
+        MsgBox(tr("Failed to read other users' information"));
+        return;
+      }
     }
 
     bool found = false;
@@ -261,9 +286,21 @@ void MainWidget::OnBtnDecrypt() {
     return;
   }
 
-  auto file_size = fs::file_size(file_path);
-  if (file_size <= 0) {
-    MsgBox(tr("Empty file"));
+  try {
+    bool exists = fs::exists(file_path);
+    if (!exists) {
+      MsgBox(tr("File not found"));
+      return;
+    }
+
+    auto file_size = fs::file_size(file_path);
+    if (file_size <= 0) {
+      MsgBox(tr("Empty file"));
+      return;
+    }
+
+  } catch (std::exception e) {
+    MsgBox(tr("Unknown error"));
     return;
   }
 
@@ -288,10 +325,41 @@ void MainWidget::OnBtnDecrypt() {
   {
     // 标记是否为加密文件
     infile.read(encrypt_flag.data(), encrypt_flag.size());
+    if (encrypt_flag != kEncryptFlag) {
+      MsgBox(tr("Not encrypted file"));
+      return;
+    }
+
     // 接收者公钥索引
     infile.read((char*)&receiver_index, sizeof(int));
+    if (receiver_index < 0 || receiver_index > kSM2KeyPairCount) {
+      MsgBox(tr("Invalid sender index"));
+      return;
+    }
+
+    // 检查当前用户是否为接收者，如果不是，直接提示该文件的接收者不是当前用户
+    {
+      proto::NameIndex name_index;
+      auto ec = ReadUserIndex(name_index);
+      if (ec == kSuccess) {
+        auto index = name_index.index();
+        if (index != receiver_index) {
+          MsgBox(tr("The current user does not have the authority to decrypt the file"));
+          return;
+        }
+      } else {
+        MsgBox(GetInfoFromErrCode(ec));
+        return;
+      }
+    }
+
     // 发送者公钥索引
     infile.read((char*)&sender_index, sizeof(int));
+    if (sender_index < 0 || sender_index > kSM2KeyPairCount) {
+      MsgBox(tr("Invalid sender index"));
+      return;
+    }
+
     // 公钥加密后的随机密钥
     infile.read((char*)enc_random.data(), enc_random.size());
     // 公钥解密出随机密钥
@@ -316,23 +384,10 @@ void MainWidget::OnBtnDecrypt() {
   }
 
   // 检查公钥是否符合，不符合直接不解密
+  // 检查加密标记字符串，是否可以正常解密，如果不能正常解密，说明公钥或者随机密钥不匹配，直接报错
   {
-    if (encrypt_flag != kEncryptFlag) {
-      MsgBox(tr("Not encrypted file"));
-      return;
-    }
-
     if (check_flag != kCheckFlag) {
       MsgBox(tr("Failed to decrypt the file, please be sure if it is a file sent to yourself"));
-      return;
-    }
-
-    if (sender_index < 0 || sender_index > kSM2KeyPairCount) {
-      MsgBox(tr("Invalid sender index"));
-      return;
-    }
-    if (receiver_index < 0 || receiver_index > kSM2KeyPairCount) {
-      MsgBox(tr("Invalid sender index"));
       return;
     }
   }
@@ -340,7 +395,8 @@ void MainWidget::OnBtnDecrypt() {
   std::string dec_path;
   {
     fs::path original(file_path);
-    std::string file_name = original.stem().string() + "-decrypt" + original.extension().string();
+    std::string file_name = original.stem().string() + "-decrypt-" + TimeString() +
+                            original.extension().string();
     original.replace_filename(file_name);
     dec_path = original.string();
   }
@@ -380,11 +436,24 @@ void MainWidget::OnBtnDecrypt() {
 }
 
 void MainWidget::OnBtnVerifyPIN() {
+  // 判断UKey是否已授权使用
+  {
+    proto::NameIndex name_index;
+    auto ec = ReadUserIndex(name_index);
+    if (ec != kSuccess) {
+      MsgBox(GetInfoFromErrCode(ec));
+      return;
+    }
+  }
+
   std::string pwd = ui->edit_pin->text().toStdString();
+  ui->edit_pin->setText("");
+
   if (pwd.empty()) {
     MsgBox(tr("Please input the password"));
     return;
   }
+
   int ec = VerifyPIN(std::vector<BYTE>(pwd.begin(), pwd.end()));
   if (ec <= kNoDevice && ec >= kErrConnect) {
     MsgBox(GetInfoFromErrCode(ec));
@@ -396,14 +465,16 @@ void MainWidget::OnBtnVerifyPIN() {
 
   UpdateSenderLabel();
   UpdateComboBox();
+
   ui->stackedWidget->setCurrentIndex(kPageOpIndex);
+
   this->setFixedSize(600, 400);
 }
 
 void MainWidget::OnBtnChangePIN() {
   std::string pwd = ui->edit_old_pin->text().toStdString();
   if (pwd.empty()) {
-    MsgBox(tr("Please input the password"));
+    MsgBox(tr("Please input the old password"));
     return;
   }
 
@@ -419,7 +490,7 @@ void MainWidget::OnBtnChangePIN() {
     MsgBox(GetInfoFromErrCode(ec));
     return;
   } else if (ec != kSuccess) {
-    MsgBox(tr("Failed to change PIN"));
+    MsgBox(tr("The old password is incorrect"));
     return;
   }
 
@@ -431,18 +502,24 @@ void MainWidget::OnBtnChangePIN() {
 
 void MainWidget::OnBtnUpdateIndex() {
   {
-    //std::string path = QFileDialog::getOpenFileName(this, tr("Open File")).toLocal8Bit().data();
     std::string path = ui->edit_update_path->text().toLocal8Bit().data();
+    if (path.empty()) {
+      MsgBox(tr("Please select the config file"));
+      return;
+    }
+
     std::ifstream input(path, std::ios::in | std::ios::binary);
     if (!input) {
       MsgBox(tr("Failed to read file"));
       return;
     }
+
     proto::IndexInfo indexs;
     if (!indexs.ParseFromIstream(&input)) {
-      MsgBox(tr("Failed to parse file"));
+      MsgBox(tr("Failed to parse file, please select the correct config file"));
       return;
     }
+
     // 写入USB Key
     auto ec = WriteOthersIndex(indexs);
     if (ec <= kNoDevice && ec >= kErrConnect) {
@@ -458,7 +535,17 @@ void MainWidget::OnBtnUpdateIndex() {
 }
 
 void MainWidget::OnBtnUpdateBrowser() {
-  ui->edit_update_path->setText(QFileDialog::getOpenFileName(this, tr("Open File")));
+  QString file_path = QFileDialog::getOpenFileName(this, tr("Open File"));
+  if (!file_path.isEmpty()) {
+    ui->edit_update_path->setText(file_path);
+  }
+}
+
+void MainWidget::OnDeviceMonitor() {
+  UpdateSenderLabel();
+  ui->stackedWidget->setCurrentIndex(kPagePINIndex);
+  this->setFixedSize(500, 180);
+
 }
 
 void MainWidget::UpdateSenderLabel() {
@@ -503,6 +590,7 @@ void MainWidget::MsgBox(const QString& msg) {
   QMessageBox msgBox(this);
   msgBox.setWindowTitle(tr("Tip"));
   msgBox.setText(msg);
+  msgBox.setButtonText(QMessageBox::Information, tr("Confirm"));
   msgBox.exec();
 }
 
@@ -524,5 +612,40 @@ QString MainWidget::GetInfoFromErrCode(int ec) {
     return tr("The file to store key pairs is not found");
   default:
     return tr("Unknown error");
+  }
+}
+
+void MainWidget::StartDeviceMonitor() {
+
+  thread_device_monitor_ = std::thread([&]() {
+
+    while (1) {
+
+      std::string name;
+      bool insert;
+      utils::WaitForDevEvent(name, insert);
+      std::cout << "-----------------------------------------------" << std::endl;
+      std::cout << "Dev " << (insert ? "insert" : "eject") << std::endl;
+      std::cout << "Name: " << name << std::endl;
+      std::cout << "-----------------------------------------------" << std::endl;
+
+      DeviceMonitor();
+
+      if (quit_) {
+        break;
+      }
+
+    }
+
+    quit_ = false;
+  });
+
+}
+
+void MainWidget::StopDeviceMonitor() {
+  quit_ = true;
+  utils::CancelWaitForDevEvent();
+  if (thread_device_monitor_.joinable()) {
+    thread_device_monitor_.join();
   }
 }

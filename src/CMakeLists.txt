@@ -4,6 +4,17 @@ add_executable(utils_test
   utils_test.cpp
 )
 
+add_executable(single_process_instance_test
+  single_process_instance_test.cpp
+  single_process_instance.cpp
+)
+
+add_executable(device_monitor_test
+  device_monitor.h
+  device_monitor.cpp
+  device_monitor_test.cpp
+)
+
 add_executable(local_auth_test
   utils.cpp
   crypto.cpp
@@ -74,6 +85,8 @@ add_executable(admin WIN32
   crypto.cpp
   proto.cpp
   local_auth.cpp
+  single_process_instance.cpp
+  device_monitor.cpp
   admin/main.cpp
   admin/mainwidget.cpp
   admin/mainwidget.h
@@ -110,6 +123,8 @@ add_executable(user WIN32
   utils.cpp
   crypto.cpp
   proto.cpp
+  single_process_instance.cpp
+  device_monitor.cpp
   user/main.cpp
   user/mainwidget.cpp
   user/mainwidget.h

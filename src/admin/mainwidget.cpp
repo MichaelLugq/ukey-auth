@@ -6,6 +6,7 @@
 #include "crypto.h"
 #include "proto.h"
 #include "local_auth.h"
+#include "device_monitor.h"
 
 #include "secret.pb.h"
 #include "index.pb.h"
@@ -418,6 +419,28 @@ MainWidget::MainWidget(QWidget *parent) :
       }
     }
 
+    {
+      // 其他用户（写）
+      {
+        int ec = WriteOthersIndex(indexs);
+        if (ec != 0) {
+          MsgBox(tr("Failed to write other users data to USB Key"));
+          return;
+        }
+      }
+
+      // 其他用户（读）
+      {
+        proto::IndexInfo infos;
+        if (ReadOthersIndex(infos) != kSuccess) {
+          MsgBox(tr("Failed to parse other users data from stream"));
+          return;
+        }
+
+        assert(infos.index_size() == indexs.index_size());
+      }
+    }
+
     // 重新加载
     UpdateComboBox();
 
@@ -532,9 +555,14 @@ MainWidget::MainWidget(QWidget *parent) :
   connect(ui->btn_verify_pin, &QPushButton::clicked, this, &MainWidget::OnBtnVerifyPIN);
 
   connect(ui->btn_change_pin, &QPushButton::clicked, this, &MainWidget::OnBtnChangePIN);
+
+  connect(this, &MainWidget::DeviceMonitor, this, &MainWidget::OnDeviceMonitor);
+
+  StartDeviceMonitor();
 }
 
 MainWidget::~MainWidget() {
+  StopDeviceMonitor();
   delete ui;
 }
 
@@ -597,7 +625,7 @@ void MainWidget::OnBtnChangePIN() {
   std::string pwd = ui->edit_old_pin->text().toStdString();
   std::string new_pwd = ui->edit_new_pin->text().toStdString();
   if (pwd.empty()) {
-    MsgBox(tr("Please input the password"));
+    MsgBox(tr("Please input the old password"));
     return;
   }
   if (new_pwd.empty()) {
@@ -606,21 +634,27 @@ void MainWidget::OnBtnChangePIN() {
   }
   auto ec = local_auth_->ChangePassword(pwd, new_pwd);
   if (ec != kSuccess) {
-    MsgBox(tr("Failed to change the password"));
+    MsgBox(tr("The old password is incorrect"));
     return;
   }
 
   MsgBox(tr("Success"));
+
+  //OnMainPageRefresh();
+
+  //// 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
+  //{
+  //  std::fstream input("secret.db", std::ios::in | std::ios::binary);
+  //  ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
+  //  ui->btn_gen->setEnabled(!input);
+  //  if (input) {
+  //    this->setFixedSize(600, 400);
+  //  }
+  //}
+}
+
+void MainWidget::OnDeviceMonitor(int insert) {
   OnMainPageRefresh();
-  // 检查密钥对文件是否存在。存在：直接跳转；不存在：不跳转
-  {
-    std::fstream input("secret.db", std::ios::in | std::ios::binary);
-    ui->stackedWidget->setCurrentIndex(input ? kPageOperatorIndex : kPageGenerateIndex);
-    ui->btn_gen->setEnabled(!input);
-    if (input) {
-      this->setFixedSize(600, 400);
-    }
-  }
 }
 
 void MainWidget::showEvent(QShowEvent* event) {
@@ -673,6 +707,7 @@ void MainWidget::MsgBox(const QString& msg) {
   QMessageBox msgBox(this);
   msgBox.setWindowTitle(tr("Tip"));
   msgBox.setText(msg);
+  msgBox.setButtonText(QMessageBox::Information, tr("Confirm"));
   msgBox.exec();
 }
 
@@ -694,5 +729,40 @@ QString MainWidget::GetInfoFromErrCode(int ec) {
     return tr("The file to store key pairs is not found");
   default:
     return tr("Unknown error");
+  }
+}
+
+void MainWidget::StartDeviceMonitor() {
+
+  thread_device_monitor_ = std::thread([&]() {
+
+    while (1) {
+
+      std::string name;
+      bool insert;
+      utils::WaitForDevEvent(name, insert);
+      std::cout << "-----------------------------------------------" << std::endl;
+      std::cout << "Dev " << (insert ? "insert" : "eject") << std::endl;
+      std::cout << "Name: " << name << std::endl;
+      std::cout << "-----------------------------------------------" << std::endl;
+
+      DeviceMonitor(insert ? 1 : 0);
+
+      if (quit_) {
+        break;
+      }
+
+    }
+
+    quit_ = false;
+  });
+
+}
+
+void MainWidget::StopDeviceMonitor() {
+  quit_ = true;
+  utils::CancelWaitForDevEvent();
+  if (thread_device_monitor_.joinable()) {
+    thread_device_monitor_.join();
   }
 }
